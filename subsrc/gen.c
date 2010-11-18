@@ -1,6 +1,9 @@
-#define _BSD_SOURCE
+/* microsynth - Basic waveform generation */
+
+/* C-stdlib */
 #include <math.h>
 
+/* microsynth headers */
 #include "sampleclock.h"
 #include "gen.h"
 
