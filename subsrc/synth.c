@@ -9,6 +9,8 @@ static pthread_t synthread;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
+static snd_pcm_t pcm;
+
 void msynth_init()
 {
     if (pthread_create(&synthread, NULL, _msynth_thread_main, NULL)) {
@@ -27,6 +29,10 @@ void msynth_init()
 static void *_msynth_thread_main(void *arg)
 {
     puts("synthread: started");
+
+    /* Begin initialization of ALSA */
+
+    /* Signal successful completion of initialization */
     pthread_mutex_lock(&mutex);
     pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mutex);
