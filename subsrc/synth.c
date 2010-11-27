@@ -1,5 +1,13 @@
+/* microsynth - synthesizer core */
+
+#include <stdio.h>
+#include <math.h>
 #include <asoundlib.h>
 #include <pthread.h>
+
+/* msynth headers */
+#include "sampleclock.h"
+#include "gen.h"
 #include "synth.h"
 
 static void *_msynth_thread_main(void *arg);
@@ -9,6 +17,7 @@ static pthread_t synthread;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
+/* ALSA stuff */
 static snd_pcm_t *pcm;
 static snd_pcm_hw_params_t *hw_p;
 static snd_pcm_sw_params_t *sw_p;
@@ -17,6 +26,11 @@ static int dir = 0;
 static snd_pcm_uframes_t
     buffer_size = 0,
     period_size = 0;
+
+/* microsynth settings */
+static volatile int shutdown = 0;
+static float volume = 0.5f;
+static struct _msynth_modifier _root, *root = &_root;
 
 void msynth_init()
 {
@@ -33,6 +47,7 @@ void msynth_init()
     return;
 }
 
+/* Convenience macro for ALSA initialization */
 #define ALSERT(MSG) \
     if (err < 0) { \
         fprintf(stderr, "synthread: Error while " MSG ": %s\n", \
@@ -42,7 +57,12 @@ void msynth_init()
 
 static void *_msynth_thread_main(void *arg)
 {
+    int i;
     int err;
+    int sample;
+
+    struct sampleclock sc = {0, 0, 0.0f, 0.0f};
+    msynth_frame fb = NULL;
 
     puts("synthread: started");
 
@@ -76,6 +96,11 @@ static void *_msynth_thread_main(void *arg)
     err = snd_pcm_hw_params_set_rate_near(pcm, hw_p, &srate, 0);
     ALSERT("setting samplerate");
     printf("synthread: Detected samplerate of %u\n", srate);
+
+    /* RW interleaved access (means we will use the snd_pcm_writei function) */
+    err = snd_pcm_hw_params_set_access(pcm, hw_p,
+        SND_PCM_ACCESS_RW_INTERLEAVED);
+    ALSERT("setting access mode");
 
     /* native-endian 16-bit signed sample format */
     err = snd_pcm_hw_params_set_format(pcm, hw_p, SND_PCM_FORMAT_S16);
@@ -133,15 +158,55 @@ static void *_msynth_thread_main(void *arg)
     ALSERT("writing sw params");
     printf("synthread: Audio system configured.\n");
 
+    /* Prepare device for playback */
+    err = snd_pcm_prepare(pcm);
+    ALSERT("preparing device");
+
+    /* Now that ALSA is configured, setup a null signal for the synthesizer */
+    _root.type = MSMT_NODE;
+    _root.data.node.func = gen_sin;
+    _root.data.node.in = malloc(sizeof(struct _msynth_modifier));
+    _root.data.node.in->type = MSMT_CONSTANT;
+    _root.data.node.in->data.constant = 440.0f;
+
+    /* Allocate a period sized framebuffer
+     * (yup an audio buffer is in ALSA speak indeed called a framebuffer)
+     */
+    fb = malloc(sizeof(struct _msynth_frame) * period_size);
+    if (!fb) {
+        perror("malloc framebuffer failed");
+        exit(1);
+    }
+
+    /* Set sampleclock to 0 */
+    sc.samples = 0;
+    sc.samplerate = srate;
+    sc.cycle = 0.0f;
+    sc.seconds = 0.0f;
+
     /* Signal successful completion of initialization */
     pthread_mutex_lock(&mutex);
     pthread_cond_signal(&cond);
     pthread_mutex_unlock(&mutex);
 
-    /* Main loop */
-    pthread_mutex_lock(&mutex);
-    pthread_cond_wait(&cond, &mutex);
-    pthread_mutex_unlock(&mutex);
+    /* -------------- Main loop --------------- */
+    while (!shutdown) {
+        /* Only during generation we need the synth tree to be static */
+        pthread_mutex_lock(&mutex);
+        for (i = 0; i < period_size; i++) {
+            sample = (int)(32767.5 * synth_eval(root, sc) * volume);
+            if (sample > 32767) sample = 32767;
+            if (sample < -32768) sample = -32768;
+            fb[i].left = fb[i].right = (short)sample;
+            sc.samples++;
+            sc.seconds = (float)sc.samples / (float)sc.samplerate;
+            sc.cycle = fmod(sc.seconds, 1.0f);
+        }
+        pthread_mutex_unlock(&mutex);
+
+        /* Send audio to sound card */
+        snd_pcm_writei(pcm, fb, period_size);
+    }
 
     puts("synthread: shutting down");
     err = snd_pcm_close(pcm);
@@ -150,11 +215,30 @@ static void *_msynth_thread_main(void *arg)
     return NULL;
 }
 
+float synth_eval(msynth_modifier mod, struct sampleclock sc)
+{
+    switch(mod->type) {
+        case MSMT_CONSTANT:
+            return mod->data.constant;
+
+        case MSMT_NODE:
+            return mod->data.node.func(sc,
+                synth_eval(mod->data.node.in, sc));
+
+        case MSMT_NODE2:
+            return mod->data.node2.func(sc,
+                synth_eval(mod->data.node2.a, sc),
+                synth_eval(mod->data.node2.b, sc));
+
+        default:;
+    }
+
+    return 0.0f;
+}
+
 void msynth_shutdown()
 {
-    pthread_mutex_lock(&mutex);
-    pthread_cond_signal(&cond);
-    pthread_mutex_unlock(&mutex);
+    shutdown = 1;
     pthread_join(synthread, NULL);
     return;
 }
