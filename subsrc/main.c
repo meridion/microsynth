@@ -10,6 +10,7 @@
 #include <readline/history.h>
 
 /* microsynth stuff */
+#include "sampleclock.h"
 #include "synth.h"
 
 int main()

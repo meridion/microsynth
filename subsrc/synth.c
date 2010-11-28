@@ -1,7 +1,10 @@
 /* microsynth - synthesizer core */
 
+#include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+
 #include <asoundlib.h>
 #include <pthread.h>
 
@@ -28,9 +31,14 @@ static snd_pcm_uframes_t
     period_size = 0;
 
 /* microsynth settings */
+static unsigned int buffer_usec = 500000;
+static unsigned int period_usec = 250000;
 static volatile int shutdown = 0;
 static float volume = 0.5f;
 static struct _msynth_modifier _root, *root = &_root;
+
+/* microsynth stats */
+static int recover_resumes = 0, recover_xruns = 0;
 
 void msynth_init()
 {
@@ -57,7 +65,7 @@ void msynth_init()
 
 static void *_msynth_thread_main(void *arg)
 {
-    int i;
+    int i, j;
     int err;
     int sample;
 
@@ -112,16 +120,29 @@ static void *_msynth_thread_main(void *arg)
 
     /* Since we want the interactive synthesizer to be very responsive
      * select a minimum buffer size.
+     *
+     * FIXME: since a minimum latency buffer results in non-stop XRUNs
+     * for now make do with approximately 0.2s latency, which is acceptable.
      */
-    err = snd_pcm_hw_params_set_buffer_size_first(pcm, hw_p, &buffer_size);
-    ALSERT("setting buffer size");
+    err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw_p, &buffer_usec, &dir);
+    ALSERT("setting buffer time");
+
+    /* Retrieve resulting buffer size */
+    err = snd_pcm_hw_params_get_buffer_size(hw_p, &buffer_size);
+    ALSERT("getting buffer size");
     printf("synthread: Selected buffersize of %lu\n", buffer_size);
     printf("synthread: Response delay is approximately %.2f ms\n",
         (double)buffer_size / (double)srate * 1000.0);
 
-    /* Select maximum period size since this improves processing performance */
-    err = snd_pcm_hw_params_set_period_size_last(pcm, hw_p, &period_size, &dir);
-    ALSERT("setting period size");
+    /* Select a period time of half the buffer time
+     * since this improves processing performance
+     */
+    err = snd_pcm_hw_params_set_period_time_near(pcm, hw_p, &period_usec, &dir);
+    ALSERT("setting period time");
+
+    /* Retrieve resulting period size */
+    err = snd_pcm_hw_params_get_period_size(hw_p, &period_size, &dir);
+    ALSERT("getting period size");
     if (dir)
         printf("synthread: Selected period size near %lu\n", period_size);
     else
@@ -150,7 +171,7 @@ static void *_msynth_thread_main(void *arg)
     ALSERT("setting stop threshold");
 
     /* Block synthesizer when there is not at least period frames available */
-    err = snd_pcm_sw_params_set_avail_min(pcm, sw_p, period_size);
+    err = snd_pcm_sw_params_set_avail_min(pcm, sw_p, buffer_size);
     ALSERT("setting minimum free frames");
 
     /* Write software parameters */
@@ -205,14 +226,60 @@ static void *_msynth_thread_main(void *arg)
         pthread_mutex_unlock(&mutex);
 
         /* Send audio to sound card */
-        snd_pcm_writei(pcm, fb, period_size);
+        /* FIXME: this loop is to help determine the bottleneck causing all
+         * the XRUNs to occur.
+         */
+        for (j = 0; j < 10; j++) {
+            err = snd_pcm_writei(pcm, fb, period_size);
+            if (err < 0)
+                err = synth_recover(err);
+            ALSERT("sending audio");
+        }
     }
 
     puts("synthread: shutting down");
+
+    if (recover_resumes)
+        printf("synthread: Device was resumed %i times\n", recover_resumes);
+    if (recover_xruns)
+        printf("synthread: %i xrun recoveries were needed\n", recover_xruns);
+
+    err = snd_pcm_drain(pcm);
+    ALSERT("draining device");
+
     err = snd_pcm_close(pcm);
     ALSERT("closing audio device");
 
     return NULL;
+}
+
+/* Recover from suspend/underrun */
+int synth_recover(int err)
+{
+    /* Recover from underrun */
+    if (err == -EPIPE) {
+        err = snd_pcm_prepare(pcm);
+        ALSERT("recovering from underrun");
+
+        recover_xruns++;
+        return 0;
+    }
+
+    if (err == -ESTRPIPE) {
+        /* Wait for the device to become resumable */
+        while ((err = snd_pcm_resume(pcm)) == -EAGAIN)
+            sleep(1);
+        ALSERT("recovering from suspend");
+
+        /* Finally prepare device for playback */
+        err = snd_pcm_prepare(pcm);
+        ALSERT("preparing device after resume");
+
+        recover_resumes++;
+        return 0;
+    }
+
+    return err;
 }
 
 float synth_eval(msynth_modifier mod, struct sampleclock sc)

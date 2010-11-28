@@ -26,7 +26,7 @@ soundscript_parse.c soundscript_parse.h: soundscript.y
 ## dependencies
 soundscript_lex.o: soundscript_parse.h
 soundscript_parse.o: soundscript_lex.h
-gen.c: gen.h sampleclock.h
-main.c: synth.h
-synth.c: synth.h
+gen.o: gen.h sampleclock.h
+main.o: synth.h
+synth.o: synth.h
 

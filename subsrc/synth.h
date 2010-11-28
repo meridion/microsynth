@@ -40,5 +40,6 @@ struct _msynth_frame {
 /* synth interface */
 void msynth_init();
 void msynth_shutdown();
+int synth_recover(int err);
 float synth_eval(msynth_modifier mod, struct sampleclock sc);
 

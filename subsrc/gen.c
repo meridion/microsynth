@@ -14,7 +14,7 @@
 /* Generate sinus wave */
 float gen_sin(struct sampleclock sc, float hertz)
 {
-    return sin(M_PI * ((hertz * 2.0f) * sc.cycle));
+    return sin(M_PI * 2.0f * hertz * sc.cycle);
 }
 
 /* Generate triangle wave */
