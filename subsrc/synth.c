@@ -65,9 +65,10 @@ void msynth_init()
 
 static void *_msynth_thread_main(void *arg)
 {
-    int i, j;
+    int i;
     int err;
     int sample;
+    int processed;
 
     struct sampleclock sc = {0, 0, 0.0f, 0.0f};
     msynth_frame fb = NULL;
@@ -167,7 +168,7 @@ static void *_msynth_thread_main(void *arg)
     ALSERT("settings start threshold");
 
     /* XRUN when buffer is empty */
-    err = snd_pcm_sw_params_set_stop_threshold(pcm, sw_p, 0);
+    err = snd_pcm_sw_params_set_stop_threshold(pcm, sw_p, buffer_size * 2);
     ALSERT("setting stop threshold");
 
     /* Block synthesizer when there is not at least period frames available */
@@ -226,14 +227,23 @@ static void *_msynth_thread_main(void *arg)
         pthread_mutex_unlock(&mutex);
 
         /* Send audio to sound card */
-        /* FIXME: this loop is to help determine the bottleneck causing all
-         * the XRUNs to occur.
-         */
-        for (j = 0; j < 10; j++) {
-            err = snd_pcm_writei(pcm, fb, period_size);
-            if (err < 0)
+        processed = 0;
+        while (processed != period_size) {
+            err = snd_pcm_writei(pcm, fb + processed, period_size - processed);
+
+            /* Retry on interruption by signal */
+            if (err == -EAGAIN)
+                continue;
+
+            /* Recover from XRUN/suspend */
+            if (err < 0) {
                 err = synth_recover(err);
-            ALSERT("sending audio");
+                ALSERT("sending audio");
+                continue;
+            }
+
+            /* Update processed samples */
+            processed += err;
         }
     }
 
@@ -243,6 +253,7 @@ static void *_msynth_thread_main(void *arg)
         printf("synthread: Device was resumed %i times\n", recover_resumes);
     if (recover_xruns)
         printf("synthread: %i xrun recoveries were needed\n", recover_xruns);
+    printf("synthread: processed %i samples\n", sc.samples);
 
     err = snd_pcm_drain(pcm);
     ALSERT("draining device");

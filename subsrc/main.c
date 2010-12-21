@@ -30,7 +30,10 @@ int main()
         line = readline("msynth> ");
     }
 
-    free(line);
+    if (line)
+        free(line);
+    else
+        puts("");
 
     /* Shutdown synthesizer */
     msynth_shutdown();
