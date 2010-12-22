@@ -17,10 +17,16 @@ float gen_sin(struct sampleclock sc, float hertz)
     return sin(M_PI * 2.0f * hertz * sc.cycle);
 }
 
+/* Generate cosine wave */
+float gen_cos(struct sampleclock sc, float hertz)
+{
+    return cos(M_PI * 2.0f * hertz * sc.cycle);
+}
+
 /* Generate triangle wave */
 float gen_triangle(struct sampleclock sc, float hertz)
 {
-    float cycle = sc.cycle - 0.25f;
+    float cycle = fmod(sc.cycle * hertz, 1.0f) - 0.25f;
 
     if (cycle < 0.0f)
         cycle += 1.0f;

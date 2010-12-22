@@ -172,7 +172,7 @@ static void *_msynth_thread_main(void *arg)
     ALSERT("setting stop threshold");
 
     /* Block synthesizer when there is not at least period frames available */
-    err = snd_pcm_sw_params_set_avail_min(pcm, sw_p, buffer_size);
+    err = snd_pcm_sw_params_set_avail_min(pcm, sw_p, period_size);
     ALSERT("setting minimum free frames");
 
     /* Write software parameters */
