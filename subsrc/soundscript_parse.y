@@ -40,11 +40,8 @@ expr_mul: expr_deep
 
 expr_deep: IDENT '(' expr_add ')'
     | '(' expr_add ')'
-    | hertz
     | number
-    ;
-
-hertz: number HZ
+    | IDENT
     ;
 
 number: '-' NUM

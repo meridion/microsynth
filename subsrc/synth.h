@@ -37,6 +37,9 @@ struct _msynth_frame {
 #define MSMT_NODE       1
 #define MSMT_NODE2      2
 
+/* NULL signal */
+extern struct _msynth_modifier msynth_null_signal;
+
 /* synth interface */
 void msynth_init();
 void msynth_shutdown();

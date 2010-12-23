@@ -10,6 +10,7 @@
 #include <readline/history.h>
 
 /* microsynth stuff */
+#include "soundscript.h"
 #include "sampleclock.h"
 #include "synth.h"
 
@@ -26,6 +27,7 @@ int main()
         if (!strcmp(line, "quit"))
             break;
         add_history(line);
+        soundscript_parse(line);
         free(line);
         line = readline("msynth> ");
     }

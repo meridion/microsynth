@@ -9,7 +9,6 @@ ident           [A-Za-z_][0-9A-Za-z_]*
 
 %%
 
-Hz              return HZ;
 {ident}         return IDENT;
 0[0-9]          return NUM;
 0x[:xdigit:]+   return NUM;
@@ -21,7 +20,15 @@ Hz              return HZ;
 \*              return '*';
 \/              return '/';
 
+    /* Parens */
+\(              return '(';
+\)              return ')';
+\[              return '[';
+\]              return ']';
+
     /* Other stuff */
 \n              return EOL;
+" "             /* Ignore whitespace */
+
 %%
 

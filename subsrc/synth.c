@@ -13,6 +13,9 @@
 #include "gen.h"
 #include "synth.h"
 
+/* msynth NULL signal */
+struct _msynth_modifier msynth_null_signal;
+
 static void *_msynth_thread_main(void *arg);
 
 /* pthread globals */
@@ -35,13 +38,18 @@ static unsigned int buffer_usec = 500000;
 static unsigned int period_usec = 250000;
 static volatile int shutdown = 0;
 static float volume = 0.5f;
-static struct _msynth_modifier _root, *root = &_root;
+static struct _msynth_modifier *root = &msynth_null_signal;
 
 /* microsynth stats */
 static int recover_resumes = 0, recover_xruns = 0;
 
 void msynth_init()
 {
+    /* Setup null signal */
+    msynth_null_signal.type = MSMT_CONSTANT;
+    msynth_null_signal.data.constant = 0.0f;
+
+    /* Start synth thread */
     if (pthread_create(&synthread, NULL, _msynth_thread_main, NULL)) {
         fprintf(stderr, "error: Cannot start synthread\n");
         exit(1);
@@ -184,13 +192,6 @@ static void *_msynth_thread_main(void *arg)
     err = snd_pcm_prepare(pcm);
     ALSERT("preparing device");
 
-    /* Now that ALSA is configured, setup a null signal for the synthesizer */
-    _root.type = MSMT_NODE;
-    _root.data.node.func = gen_sin;
-    _root.data.node.in = malloc(sizeof(struct _msynth_modifier));
-    _root.data.node.in->type = MSMT_CONSTANT;
-    _root.data.node.in->data.constant = 440.0f;
-
     /* Allocate a period sized framebuffer
      * (yup an audio buffer is in ALSA speak indeed called a framebuffer)
      */
@@ -206,6 +207,10 @@ static void *_msynth_thread_main(void *arg)
     sc.cycle = 0.0f;
     sc.seconds = 0.0f;
 
+    /* Initially the <root> variable describing the flow of sound within
+     * the synthesizer is configured to be a NULL signal. (silence)
+     */
+
     /* Signal successful completion of initialization */
     pthread_mutex_lock(&mutex);
     pthread_cond_signal(&cond);
@@ -217,12 +222,13 @@ static void *_msynth_thread_main(void *arg)
         pthread_mutex_lock(&mutex);
         for (i = 0; i < period_size; i++) {
             sample = (int)(32767.5 * synth_eval(root, sc) * volume);
+
+            /* Clip samples */
             if (sample > 32767) sample = 32767;
             if (sample < -32768) sample = -32768;
+
             fb[i].left = fb[i].right = (short)sample;
-            sc.samples++;
-            sc.seconds = (float)sc.samples / (float)sc.samplerate;
-            sc.cycle = fmod(sc.seconds, 1.0f);
+            sc = sc_from_samples(sc.samplerate, sc.samples + 1);
         }
         pthread_mutex_unlock(&mutex);
 
@@ -249,17 +255,24 @@ static void *_msynth_thread_main(void *arg)
 
     puts("synthread: shutting down");
 
+    /* Dump any statistics recorded */
     if (recover_resumes)
         printf("synthread: Device was resumed %i times\n", recover_resumes);
     if (recover_xruns)
         printf("synthread: %i xrun recoveries were needed\n", recover_xruns);
     printf("synthread: processed %i samples\n", sc.samples);
 
+    /* Wait for playback to complete */
     err = snd_pcm_drain(pcm);
     ALSERT("draining device");
 
+    /* Shutdown PCM device */
     err = snd_pcm_close(pcm);
     ALSERT("closing audio device");
+
+    /* Clean up parameters */
+    snd_pcm_hw_params_free(hw_p);
+    snd_pcm_sw_params_free(sw_p);
 
     return NULL;
 }
@@ -293,6 +306,13 @@ int synth_recover(int err)
     return err;
 }
 
+/* Evaluate sound flow graph.
+ *
+ * This is where the actual synthesis takes place.
+ * mod: A graph structure indicating oscillators, transformers and
+ *      filters.
+ * sc: The sample clock, used to make the synthesis discrete.
+ */
 float synth_eval(msynth_modifier mod, struct sampleclock sc)
 {
     switch(mod->type) {
