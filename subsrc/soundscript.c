@@ -59,6 +59,7 @@ void soundscript_init()
     g_hash_table_insert(symtab, "triangle", (gpointer)gen_triangle);
     g_hash_table_insert(symtab, "pulse", (gpointer)gen_pulse);
     g_hash_table_insert(symtab, "square", (gpointer)gen_square);
+    g_hash_table_insert(symtab, "chipify", (gpointer)tf_chipify);
 
     return;
 }

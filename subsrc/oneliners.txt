@@ -1,0 +1,5 @@
+
+sin(660 + 110 * (square(1) + square(4)))
+triangle(230 + 20 * (square(1) + square(40)))
+triangle(230 + 20 * (square(1) + square(9)))
+
