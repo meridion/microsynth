@@ -45,4 +45,6 @@ void msynth_init();
 void msynth_shutdown();
 int synth_recover(int err);
 float synth_eval(msynth_modifier mod, struct sampleclock sc);
+void synth_replace(msynth_modifier tree);
+void synth_free_recursive(msynth_modifier mod);
 

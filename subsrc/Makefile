@@ -1,9 +1,13 @@
 
 .PHONY: default clean
 
-PKG_CFLAGS=$(shell pkg-config --cflags alsa)
-PKG_LIBS=$(shell pkg-config --libs alsa)
+# Change this if your GLib version is something entirely different
+GLIBVER=glib-2.0
 
+PKG_CFLAGS=$(shell pkg-config --cflags alsa --cflags $(GLIBVER))
+PKG_LIBS=$(shell pkg-config --libs alsa --libs $(GLIBVER))
+
+CC_FLAGS=-D_BSD_SOURCE -O2 -Wall -pedantic -pipe -pthread -ggdb
 default: all
 
 clean:
@@ -15,7 +19,7 @@ microsynth: main.o gen.o synth.o soundscript_lex.o soundscript_parse.o sampleclo
 	gcc -o $@ $^ -pipe $(PKG_LIBS) -lm -lreadline -pthread
 
 %.o: %.c
-	gcc -c -o $@ $< $(PKG_CFLAGS) -D_BSD_SOURCE -O2 -Wall -pedantic -pipe -pthread
+	gcc -c -o $@ $< $(PKG_CFLAGS) $(CC_FLAGS)
 
 soundscript_lex.c soundscript_lex.h: soundscript_lex.lex
 	flex -o soundscript_lex.c --header-file=soundscript_lex.h soundscript_lex.lex

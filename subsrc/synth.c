@@ -63,6 +63,13 @@ void msynth_init()
     return;
 }
 
+void msynth_shutdown()
+{
+    shutdown = 1;
+    pthread_join(synthread, NULL);
+    return;
+}
+
 /* Convenience macro for ALSA initialization */
 #define ALSERT(MSG) \
     if (err < 0) { \
@@ -306,6 +313,21 @@ int synth_recover(int err)
     return err;
 }
 
+/* Replace audio flow tree */
+void synth_replace(msynth_modifier tree)
+{
+    /* prevent audio synthesis during replacement process */
+    pthread_mutex_lock(&mutex);
+
+    if (root != &msynth_null_signal)
+        synth_free_recursive(root);
+
+    root = tree;
+    pthread_mutex_unlock(&mutex);
+
+    return;
+}
+
 /* Evaluate sound flow graph.
  *
  * This is where the actual synthesis takes place.
@@ -334,10 +356,23 @@ float synth_eval(msynth_modifier mod, struct sampleclock sc)
     return 0.0f;
 }
 
-void msynth_shutdown()
+/* Recursively free synth modifier graph */
+void synth_free_recursive(msynth_modifier mod)
 {
-    shutdown = 1;
-    pthread_join(synthread, NULL);
+    switch(mod->type) {
+        case MSMT_NODE:
+            synth_free_recursive(mod->data.node.in);
+            break;
+
+        case MSMT_NODE2:
+            synth_free_recursive(mod->data.node2.a);
+            synth_free_recursive(mod->data.node2.b);
+            break;
+
+        default:;
+    }
+
+    free(mod);
     return;
 }
 

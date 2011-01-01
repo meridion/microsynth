@@ -10,9 +10,9 @@
 #include <readline/history.h>
 
 /* microsynth stuff */
-#include "soundscript.h"
 #include "sampleclock.h"
 #include "synth.h"
+#include "soundscript.h"
 
 int main()
 {
@@ -20,6 +20,7 @@ int main()
 
     /* Setup synthesizer */
     msynth_init();
+    soundscript_init();
 
     line = readline("msynth> ");
 
@@ -38,6 +39,7 @@ int main()
         puts("");
 
     /* Shutdown synthesizer */
+    soundscript_shutdown();
     msynth_shutdown();
 
     return 0;

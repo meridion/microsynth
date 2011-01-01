@@ -1,14 +1,27 @@
 /* Microsynth soundscript grammar */
 
 %{
+#include "sampleclock.h"
+#include "synth.h"
 #include "soundscript_lex.h"
 #include "soundscript_parse.h"
+#include "soundscript.h"
+#include "transform.h"
 
 void yyerror(const char *s);
 
 %}
 
-%token HZ NUM IDENT EOL
+%union {
+    float number;
+    char *name;
+    msynth_modifier mod;
+}
+
+%token <number> NUM
+%token <name> IDENT
+%token EOL GARBAGE
+%type <mod> number expr_deep expr_mul expr_add
 
 %%
 
@@ -20,8 +33,15 @@ line: statement EOL
     ;
 
 statement:
-    | expr_add
-    | assignment
+    | expr_add {
+            /* GC should not delete this */
+            soundscript_mark_use($1);
+
+            /* Change synthesizer signal */
+            synth_replace($1);
+        }
+
+    | assignment { puts("Assignments are currently discarded, sorry"); }
     ;
 
 assignment: IDENT '=' assignment
@@ -29,23 +49,31 @@ assignment: IDENT '=' assignment
     ;
 
 expr_add: expr_mul
-    | expr_mul '+' expr_add
-    | expr_mul '-' expr_add
+    | expr_mul '+' expr_add { $$ = ssb_add($1, $3); }
+    | expr_mul '-' expr_add { $$ = ssb_sub($1, $3); }
     ;
 
 expr_mul: expr_deep
-    | expr_deep '*' expr_mul
-    | expr_deep '/' expr_mul
+    | expr_deep '*' expr_mul { $$ = ssb_mul($1, $3); }
+    | expr_deep '/' expr_mul { $$ = ssb_div($1, $3); }
     ;
 
-expr_deep: IDENT '(' expr_add ')'
-    | '(' expr_add ')'
-    | number
-    | IDENT
+expr_deep: IDENT '(' expr_add ')' {
+            if (!ssb_can_func1($1)) {
+                printf("No such function: '%s'\n", $1);
+                YYERROR;
+            }
+
+            $$ = ssb_func1($1, $3);
+        }
+
+    | '(' expr_add ')' { $$ = $2; }
+    | number { $$ = $1; }
+    | IDENT { $$ = NULL; }
     ;
 
-number: '-' NUM
-    | NUM
+number: '-' NUM { $$ = ssb_number(-$2); }
+    | NUM { $$ = ssb_number($1); }
     ;
 
 %%
