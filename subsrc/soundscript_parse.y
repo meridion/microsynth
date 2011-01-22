@@ -69,7 +69,7 @@ expr_deep: IDENT '(' expr_add ')' {
 
     | '(' expr_add ')' { $$ = $2; }
     | number { $$ = $1; }
-    | IDENT { $$ = NULL; }
+    | IDENT { $$ = ssb_number(0.0); }
     ;
 
 number: '-' NUM { $$ = ssb_number(-$2); }
