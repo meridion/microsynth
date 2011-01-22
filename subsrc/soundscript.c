@@ -131,6 +131,7 @@ msynth_modifier ssb_number(float num)
 
     newmod->type = MSMT_CONSTANT;
     newmod->data.constant = num;
+    newmod->storage = NULL;
 
     return newmod;
 }
@@ -145,6 +146,7 @@ msynth_modifier ssb_add(msynth_modifier a, msynth_modifier b)
     newmod->data.node2.func = tf_add;
     newmod->data.node2.a = a;
     newmod->data.node2.b = b;
+    newmod->storage = NULL;
 
     /* Update GC */
     soundscript_mark_no_use(newmod);
@@ -164,6 +166,7 @@ msynth_modifier ssb_sub(msynth_modifier a, msynth_modifier b)
     newmod->data.node2.func = tf_sub;
     newmod->data.node2.a = a;
     newmod->data.node2.b = b;
+    newmod->storage = NULL;
 
     /* Update GC */
     soundscript_mark_no_use(newmod);
@@ -183,6 +186,7 @@ msynth_modifier ssb_mul(msynth_modifier a, msynth_modifier b)
     newmod->data.node2.func = tf_mul;
     newmod->data.node2.a = a;
     newmod->data.node2.b = b;
+    newmod->storage = NULL;
 
     /* Update GC */
     soundscript_mark_no_use(newmod);
@@ -202,6 +206,7 @@ msynth_modifier ssb_div(msynth_modifier a, msynth_modifier b)
     newmod->data.node2.func = tf_div;
     newmod->data.node2.a = a;
     newmod->data.node2.b = b;
+    newmod->storage = NULL;
 
     /* Update GC */
     soundscript_mark_no_use(newmod);
@@ -229,6 +234,7 @@ msynth_modifier ssb_func1(char *func_name, msynth_modifier in)
     newmod->data.node.in = in;
     newmod->data.node.func =
         (msynth_modfunc)g_hash_table_lookup(symtab, func_name);
+    newmod->storage = NULL;
 
     /* Update GC state */
     soundscript_mark_use(in);

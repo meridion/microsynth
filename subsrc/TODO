@@ -1,6 +1,7 @@
 
-
-decoupled oscillators/local storage
+- multiple argument functions
+- local storage
+- decoupled oscillators
 
 - garbage collector (DONE)
 - sin40, hoi segfault oplossen (DONE)

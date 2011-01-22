@@ -4,12 +4,15 @@ typedef struct _msynth_modifier *msynth_modifier;
 typedef struct _msynth_frame *msynth_frame;
 
 /* synth callbacks */
-typedef float (*msynth_modfunc)(struct sampleclock sc, float in);
-typedef float (*msynth_modfunc2)(struct sampleclock sc, float a, float b);
+typedef float (*msynth_modfunc)(struct sampleclock sc, void **storage,
+    float in);
+typedef float (*msynth_modfunc2)(struct sampleclock sc, void **storage,
+    float a, float b);
 
 /* synth modifiers */
 struct _msynth_modifier {
     int type;
+    void *storage;
 
     union _msynth_modifier_data {
         struct _mod_node {

@@ -342,11 +342,11 @@ float synth_eval(msynth_modifier mod, struct sampleclock sc)
             return mod->data.constant;
 
         case MSMT_NODE:
-            return mod->data.node.func(sc,
+            return mod->data.node.func(sc, &mod->storage,
                 synth_eval(mod->data.node.in, sc));
 
         case MSMT_NODE2:
-            return mod->data.node2.func(sc,
+            return mod->data.node2.func(sc, &mod->storage,
                 synth_eval(mod->data.node2.a, sc),
                 synth_eval(mod->data.node2.b, sc));
 
@@ -372,6 +372,8 @@ void synth_free_recursive(msynth_modifier mod)
         default:;
     }
 
+    if (mod->storage)
+        free(mod->storage);
     free(mod);
     return;
 }

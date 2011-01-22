@@ -6,19 +6,19 @@
 #include "transform.h"
 
 /* Multiply samples */
-float tf_mul(struct sampleclock sc, float a, float b)
+float tf_mul(struct sampleclock sc, void ** storage, float a, float b)
 {
     return a * b;
 }
 
 /* Add samples */
-float tf_add(struct sampleclock sc, float a, float b)
+float tf_add(struct sampleclock sc, void **storage, float a, float b)
 {
     return a + b;
 }
 
 /* Divide samples */
-float tf_div(struct sampleclock sc, float a, float b)
+float tf_div(struct sampleclock sc, void **storage, float a, float b)
 {
     if (b == 0.0f)
         return 0.0f;
@@ -26,13 +26,13 @@ float tf_div(struct sampleclock sc, float a, float b)
 }
 
 /* Subtract samples */
-float tf_sub(struct sampleclock sc, float a, float b)
+float tf_sub(struct sampleclock sc, void **storage, float a, float b)
 {
     return a - b;
 }
 
 /* Transform input sample to chiptune (8-bit) */
-float tf_chipify(struct sampleclock sc, float in)
+float tf_chipify(struct sampleclock sc, void **storage, float in)
 {
     in *= 128.0f;
 
