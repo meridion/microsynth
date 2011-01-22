@@ -12,7 +12,6 @@
 
 /* Soundscript GC */
 static GHashTable *gc_ht = NULL;
-static GSList *gc_sl = NULL;
 
 /* Symbol table */
 static GHashTable *symtab;
@@ -75,18 +74,50 @@ void soundscript_shutdown()
 /* Mark mod pointer as used */
 void soundscript_mark_use(msynth_modifier mod)
 {
+     /*
+     * A hashtable entry means the garbage collector
+     * will free this pointer, therefore we remove it,
+     * if the key was not there anyway, there is no problem.
+     */
+    g_hash_table_remove(gc_ht, mod);
+
     return;
 }
 
 /* Mark mod pointer as unused */
 void soundscript_mark_no_use(msynth_modifier mod)
 {
+     /*
+     * Insert the mod as key and value to mark it
+     * for removal.
+     */
+     g_hash_table_insert(gc_ht, mod, mod);
+
     return;
 }
 
 /* Destroy all unused pointers and clear GC */
 void soundscript_run_gc(void)
 {
+    GList *list;
+    msynth_modifier mod;
+
+    list = g_hash_table_get_values(gc_ht);
+
+    /* While elements in list, free and update */
+    while (list) {
+        mod = g_list_nth_data(list, 0);
+
+        /* Remove object */
+        synth_free_recursive(mod);
+
+        /* grab next item in list */
+        list = g_list_next(list);
+    }
+
+    /* Clear GC table */
+    g_hash_table_remove_all(gc_ht);
+
     return;
 }
 

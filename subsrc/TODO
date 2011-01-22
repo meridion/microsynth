@@ -1,7 +1,7 @@
 
-garbage collector
 
 decoupled oscillators/local storage
 
+- garbage collector (DONE)
 - sin40, hoi segfault oplossen (DONE)
 

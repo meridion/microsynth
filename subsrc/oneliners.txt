@@ -3,5 +3,8 @@ sin(660 + 110 * (square(1) + square(4)))
 triangle(230 + 20 * (square(1) + square(40)))
 triangle(230 + 20 * (square(1) + square(9)))
 saw(440) * (rsaw(1) / 2.0 + 1) + sin(220) + sin(110) + (sin(880) * (square(1) / 2.0 + 1))
+
+# This line currently fails due to the implementation of
+# the oscillator clocks.
 triangle(110 + sin(4.25 + 4 * sin(0.25)))
 
