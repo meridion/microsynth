@@ -21,7 +21,7 @@ void yyerror(const char *s);
 %token <number> NUM
 %token <name> IDENT
 %token EOL GARBAGE
-%type <mod> number expr_deep expr_mul expr_add
+%type <mod> number expr_deep expr_mul expr_add statement
 
 %%
 
@@ -29,19 +29,24 @@ script:
     | script line
     ;
 
-line: statement EOL
-    ;
-
-statement:
-    | expr_add {
+line: statement EOL {
             /* GC should not delete this */
             soundscript_mark_use($1);
 
             /* Change synthesizer signal */
             synth_replace($1);
         }
+    ;
 
-    | assignment { puts("Assignments are currently discarded, sorry"); }
+statement:
+    | expr_add {
+            $$ = $1;
+        }
+
+    | assignment { 
+            puts("Assignments are currently discarded, sorry");
+            $$ = NULL;
+        }
     ;
 
 assignment: IDENT '=' assignment
@@ -60,7 +65,7 @@ expr_mul: expr_deep
 
 expr_deep: IDENT '(' expr_add ')' {
             if (!ssb_can_func1($1)) {
-                printf("No such function: '%s'\n", $1);
+                fprintf(stderr, "No such function: '%s'\n", $1);
                 YYERROR;
             }
 
@@ -69,7 +74,10 @@ expr_deep: IDENT '(' expr_add ')' {
 
     | '(' expr_add ')' { $$ = $2; }
     | number { $$ = $1; }
-    | IDENT { $$ = ssb_number(0.0); }
+    | IDENT {
+            fprintf(stderr, "No such variable: '%s'\n", $1);
+            YYERROR;
+        }
     ;
 
 number: '-' NUM { $$ = ssb_number(-$2); }
