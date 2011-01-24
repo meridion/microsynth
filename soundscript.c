@@ -10,6 +10,12 @@
 #include "soundscript_parse.h"
 #include "soundscript.h"
 
+/* Soundscript function definition */
+struct ss_func_def {
+    void *func;
+    int args;
+};
+
 /* Soundscript GC */
 static GHashTable *gc_ht = NULL;
 
@@ -44,21 +50,48 @@ void soundscript_parse(char *line)
     return;
 }
 
+/* Generate function definition */
+gpointer ssi_def_func(void *func, int args)
+{
+    struct ss_func_def *def;
+    def = malloc(sizeof(struct ss_func_def));
+    if (!def) {
+        perror("ssi_def_func");
+        exit(1);
+    }
+
+    def->args = args;
+    def->func = func;
+
+    return def;
+}
+
 /* Initialize soundscript subsystem */
 void soundscript_init()
 {
     gc_ht = g_hash_table_new(NULL, NULL);
     symtab = g_hash_table_new(g_str_hash, g_str_equal);
 
-    /* Setup built-ins */
-    g_hash_table_insert(symtab, "sin", (gpointer)gen_sin);
-    g_hash_table_insert(symtab, "cos", (gpointer)gen_cos);
-    g_hash_table_insert(symtab, "saw", (gpointer)gen_saw);
-    g_hash_table_insert(symtab, "rsaw", (gpointer)gen_rsaw);
-    g_hash_table_insert(symtab, "triangle", (gpointer)gen_triangle);
-    g_hash_table_insert(symtab, "pulse", (gpointer)gen_pulse);
-    g_hash_table_insert(symtab, "square", (gpointer)gen_square);
-    g_hash_table_insert(symtab, "chipify", (gpointer)tf_chipify);
+    /* Setup built-in functions */
+
+    /* Oscillators */
+    g_hash_table_insert(symtab, "sin", ssi_def_func(gen_sin, 1));
+    g_hash_table_insert(symtab, "cos", ssi_def_func(gen_cos, 1));
+    g_hash_table_insert(symtab, "saw", ssi_def_func(gen_saw, 1));
+    g_hash_table_insert(symtab, "rsaw", ssi_def_func(gen_rsaw, 1));
+    g_hash_table_insert(symtab, "triangle", ssi_def_func(gen_triangle, 1));
+    g_hash_table_insert(symtab, "pulse", ssi_def_func(gen_pulse, 1));
+    g_hash_table_insert(symtab, "square", ssi_def_func(gen_square, 1));
+    g_hash_table_insert(symtab, "whitenoise", ssi_def_func(gen_whitenoise, 0));
+
+    /* Transformers */
+    g_hash_table_insert(symtab, "chipify", ssi_def_func(tf_chipify, 1));
+
+    /* Mathematical operations */
+    g_hash_table_insert(symtab, "add", ssi_def_func(tf_add, 2));
+    g_hash_table_insert(symtab, "sub", ssi_def_func(tf_sub, 2));
+    g_hash_table_insert(symtab, "mul", ssi_def_func(tf_mul, 2));
+    g_hash_table_insert(symtab, "div", ssi_def_func(tf_div, 2));
 
     return;
 }
@@ -218,10 +251,52 @@ msynth_modifier ssb_div(msynth_modifier a, msynth_modifier b)
 
 /* ----- Function calls ------ */
 
+/* Check for generator function (Disabled) */
+int ssb_can_func0(char *func_name)
+{
+    struct ss_func_def *def = g_hash_table_lookup(symtab, func_name);
+    if (!def)
+        return 0;
+
+    return def->args == 0;
+}
+
 /* Check for single input function */
 int ssb_can_func1(char *func_name)
 {
-    return g_hash_table_lookup(symtab, func_name) != NULL;
+    struct ss_func_def *def = g_hash_table_lookup(symtab, func_name);
+    if (!def)
+        return 0;
+
+    return def->args == 1;
+}
+
+/* Check for dual signal function */
+int ssb_can_func2(char *func_name)
+{
+    struct ss_func_def *def = g_hash_table_lookup(symtab, func_name);
+    if (!def)
+        return 0;
+
+    return def->args == 2;
+}
+
+/* Function generating signal (Disabled) */
+msynth_modifier ssb_func0(char *func_name)
+{
+    msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
+    assert(newmod);
+
+    newmod->type = MSMT_NODE0;
+    newmod->data.node0.func =
+        (msynth_modfunc)
+        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func;
+    newmod->storage = NULL;
+
+    /* Update GC state */
+    soundscript_mark_no_use(newmod);
+
+    return newmod;
 }
 
 /* Function call with a single input signal */
@@ -233,11 +308,35 @@ msynth_modifier ssb_func1(char *func_name, msynth_modifier in)
     newmod->type = MSMT_NODE;
     newmod->data.node.in = in;
     newmod->data.node.func =
-        (msynth_modfunc)g_hash_table_lookup(symtab, func_name);
+        (msynth_modfunc)
+        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func;
     newmod->storage = NULL;
 
     /* Update GC state */
     soundscript_mark_use(in);
+    soundscript_mark_no_use(newmod);
+
+    return newmod;
+}
+
+/* Return modifier for function accepting 2 input signals */
+msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
+    msynth_modifier b)
+{
+    msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
+    assert(newmod);
+
+    newmod->type = MSMT_NODE2;
+    newmod->data.node2.a = a;
+    newmod->data.node2.b = b;
+    newmod->data.node2.func =
+        (msynth_modfunc)
+        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func;
+    newmod->storage = NULL;
+
+    /* Update GC state */
+    soundscript_mark_use(a);
+    soundscript_mark_use(b);
     soundscript_mark_no_use(newmod);
 
     return newmod;

@@ -5,6 +5,7 @@ void soundscript_parse(char *line);
 
 /* Global init/shutdown */
 void soundscript_init();
+gpointer ssi_def_func(void *func, int args);
 void soundscript_shutdown();
 
 /* Soundscript GC */
@@ -21,6 +22,11 @@ msynth_modifier ssb_add(msynth_modifier a, msynth_modifier b);
 msynth_modifier ssb_sub(msynth_modifier a, msynth_modifier b);
 msynth_modifier ssb_mul(msynth_modifier a, msynth_modifier b);
 msynth_modifier ssb_div(msynth_modifier a, msynth_modifier b);
+int ssb_can_func0(char *func_name);
 int ssb_can_func1(char *func_name);
+int ssb_can_func2(char *func_name);
+msynth_modifier ssb_func0(char *func_name);
 msynth_modifier ssb_func1(char *func_name, msynth_modifier in);
+msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
+    msynth_modifier b);
 

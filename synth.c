@@ -341,6 +341,9 @@ float synth_eval(msynth_modifier mod, struct sampleclock sc)
         case MSMT_CONSTANT:
             return mod->data.constant;
 
+        case MSMT_NODE0:
+            return mod->data.node0.func(sc, &mod->storage);
+
         case MSMT_NODE:
             return mod->data.node.func(sc, &mod->storage,
                 synth_eval(mod->data.node.in, sc));

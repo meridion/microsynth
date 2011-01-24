@@ -4,6 +4,7 @@ typedef struct _msynth_modifier *msynth_modifier;
 typedef struct _msynth_frame *msynth_frame;
 
 /* synth callbacks */
+typedef float (*msynth_modfunc0)(struct sampleclock sc, void **storage);
 typedef float (*msynth_modfunc)(struct sampleclock sc, void **storage,
     float in);
 typedef float (*msynth_modfunc2)(struct sampleclock sc, void **storage,
@@ -25,6 +26,10 @@ struct _msynth_modifier {
             msynth_modfunc2 func;
         } node2;
 
+        struct _mod_node0 {
+            msynth_modfunc0 func;
+        } node0;
+
         float constant;
     } data;
 };
@@ -37,8 +42,9 @@ struct _msynth_frame {
 /* synth modification types */
 #define MSMT_INVALID    -1
 #define MSMT_CONSTANT   0
-#define MSMT_NODE       1
-#define MSMT_NODE2      2
+#define MSMT_NODE0      1
+#define MSMT_NODE       2
+#define MSMT_NODE2      3
 
 /* NULL signal */
 extern struct _msynth_modifier msynth_null_signal;

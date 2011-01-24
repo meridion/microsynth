@@ -120,3 +120,13 @@ float gen_square(struct sampleclock sc, void **storage, float hertz)
     return osc->cycle < 0.5f ? 1.0f : -1.0f;
 }
 
+/* Generate whitenoise (sort of) */
+float gen_whitenoise(struct sampleclock sc, void **storage)
+{
+    /*
+    if (sc.samples % sc.samplerate == 0)
+        printf("%f\n", drand48());
+    */
+    return (float)((double)random() / (double)RAND_MAX * 2.0 - 1.0);
+}
+

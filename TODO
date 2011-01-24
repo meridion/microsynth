@@ -1,8 +1,20 @@
 
-- multiple argument functions
 - local storage
+- function definitions
+- settings volume
+- sample rewinding
 
+# 0.1.1
+- variable argument functions (DONE)
+- filters
+- whitenoise function (DONE)
+- low latency default setup
+- audio setup CLI
+
+### Completed features ###
+
+# 0.1
 - decoupled oscillators (DONE)
 - garbage collector (DONE)
-- sin40, hoi segfault oplossen (DONE)
+- FIX: sin40, hoi segfault oplossen (DONE)
 

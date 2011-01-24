@@ -9,6 +9,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+/* GLib */
+#include <glib.h>
+
 /* microsynth stuff */
 #include "sampleclock.h"
 #include "synth.h"
@@ -17,6 +20,8 @@
 int main()
 {
     char *line;
+
+    srandom(20091989);
 
     /* Setup synthesizer */
     msynth_init();

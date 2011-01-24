@@ -48,6 +48,7 @@ ident           [A-Za-z_][0-9A-Za-z_]*
 \)                  return ')';
 \[                  return '[';
 \]                  return ']';
+,                   return ',';
 
     /* Other stuff */
 \n                  return EOL;
