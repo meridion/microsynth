@@ -2,6 +2,7 @@
 
 %{
 #include <glib.h>
+#include <math.h>
 #include "sampleclock.h"
 #include "synth.h"
 #include "soundscript_lex.h"
@@ -108,6 +109,9 @@ expr_deep: IDENT '(' any_args ')' {
     | IDENT {
             fprintf(stderr, "No such variable: '%s'\n", $1);
             YYERROR;
+        }
+    | expr_deep '[' NUM ']' {
+            $$ = ssb_delay($1, (unsigned int)roundf($3));
         }
     ;
 

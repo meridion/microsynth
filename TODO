@@ -2,7 +2,6 @@
 - local storage
 - function definitions
 - settings volume
-- sample rewinding
 
 # 0.1.1
 - variable argument functions (DONE)
@@ -10,6 +9,7 @@
 - whitenoise function (DONE)
 - low latency default setup
 - audio setup CLI
+- sample rewinding/delay (DONE)
 
 ### Completed features ###
 

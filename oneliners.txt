@@ -4,4 +4,8 @@ triangle(230 + 20 * (square(1) + square(40)))
 triangle(230 + 20 * (square(1) + square(9)))
 saw(440) * (rsaw(1) / 2.0 + 1) + sin(220) + sin(110) + (sin(880) * (square(1) / 2.0 + 1))
 triangle(110 + sin(4.25 + 4 * sin(0.25)))
+saw(110 * (saw(0.5) / 2 + 0.5)) * whitenoise()
+(triangle(330 + 110 * square(0.125)) + saw(440 * (rsaw(1) / 2 + 0.5)) + sin(330 + 330 * square(1))) * 0.33333333
+(saw(220)[0] + saw(220)[20]) * 0.03
+
 

@@ -47,3 +47,22 @@ float tf_chipify(struct sampleclock sc, void **storage, float in)
     return in;
 }
 
+/* Delays sample 'in' by X samples */
+float tf_delay(struct sampleclock sc, void **storage, float in)
+{
+    tf_delay_info di = (tf_delay_info)*storage;
+    float
+        *history = (float*)(di + 1),
+        r;
+
+    if (di->delay) {
+        r = history[di->pos];
+        history[di->pos] = in;
+        di->pos = (di->pos + 1) % di->delay;
+    } else {
+        r = in;
+    }
+
+    return r;
+}
+

@@ -249,6 +249,38 @@ msynth_modifier ssb_div(msynth_modifier a, msynth_modifier b)
     return newmod;
 }
 
+/* Delay sample by X */
+msynth_modifier ssb_delay(msynth_modifier in, int delay)
+{
+    tf_delay_info di;
+    float *history;
+    int i;
+
+    msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
+    assert(newmod);
+
+    newmod->type = MSMT_NODE;
+    newmod->data.node.func = tf_delay;
+    newmod->data.node.in = in;
+    newmod->storage = malloc(sizeof(struct _tf_delay_info) +
+        sizeof(float) * delay);
+    assert(newmod->storage);
+
+    di = (tf_delay_info)newmod->storage;
+    history = (float*)(di + 1);
+    di->delay = delay;
+    di->pos = 0;
+
+    for (i = 0; i < delay; i++)
+        history[i] = 0.0f;
+
+    /* Update GC */
+    soundscript_mark_no_use(newmod);
+    soundscript_mark_use(in);
+
+    return newmod;
+}
+
 /* ----- Function calls ------ */
 
 /* Check for generator function (Disabled) */
