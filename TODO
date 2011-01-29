@@ -4,11 +4,11 @@
 - settings volume
 
 # 0.1.1
-- variable argument functions (DONE)
 - filters
-- whitenoise function (DONE)
 - low latency default setup
 - audio setup CLI
+- variable argument functions (DONE)
+- whitenoise function (DONE)
 - sample rewinding/delay (DONE)
 
 ### Completed features ###

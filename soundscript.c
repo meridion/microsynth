@@ -92,6 +92,12 @@ void soundscript_init()
     g_hash_table_insert(symtab, "sub", ssi_def_func(tf_sub, 2));
     g_hash_table_insert(symtab, "mul", ssi_def_func(tf_mul, 2));
     g_hash_table_insert(symtab, "div", ssi_def_func(tf_div, 2));
+    g_hash_table_insert(symtab, "min", ssi_def_func(tf_min, 2));
+    g_hash_table_insert(symtab, "max", ssi_def_func(tf_max, 2));
+    g_hash_table_insert(symtab, "abs", ssi_def_func(tf_abs, 1));
+    g_hash_table_insert(symtab, "clamp", ssi_def_func(tf_clamp, 2));
+    g_hash_table_insert(symtab, "floor", ssi_def_func(tf_floor, 1));
+    g_hash_table_insert(symtab, "ceil", ssi_def_func(tf_ceil, 1));
 
     return;
 }

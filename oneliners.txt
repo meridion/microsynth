@@ -7,5 +7,6 @@ triangle(110 + sin(4.25 + 4 * sin(0.25)))
 saw(110 * (saw(0.5) / 2 + 0.5)) * whitenoise()
 (triangle(330 + 110 * square(0.125)) + saw(440 * (rsaw(1) / 2 + 0.5)) + sin(330 + 330 * square(1))) * 0.33333333
 (saw(220)[0] + saw(220)[20]) * 0.03
-
+(square(40)[0] + cos(0.1) * square(40)[1] + cos(0.1)[20] * square(40)[2])
+(square(50) + square(50)[100] + square(50)[120] + square(50)[140] + square(50)[160] + square(50)[180] + square(50)[200]) / 7
 
