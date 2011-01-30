@@ -9,6 +9,7 @@
 #include <pthread.h>
 
 /* msynth headers */
+#include "main.h"
 #include "sampleclock.h"
 #include "gen.h"
 #include "synth.h"
@@ -34,8 +35,6 @@ static snd_pcm_uframes_t
     period_size = 0;
 
 /* microsynth settings */
-static unsigned int buffer_usec = 500000;
-static unsigned int period_usec = 250000;
 static volatile int shutdown = 0;
 static volatile float volume = 0.5f;
 static struct _msynth_modifier *root = &msynth_null_signal;
@@ -92,7 +91,7 @@ static void *_msynth_thread_main(void *arg)
 
     /* Begin initialization of ALSA */
     /* snd_pcm_open(pcm_handle, device_name, stream_type, open_mode) */
-    err = snd_pcm_open(&pcm, "default", SND_PCM_STREAM_PLAYBACK, 0);
+    err = snd_pcm_open(&pcm, config.device_name, SND_PCM_STREAM_PLAYBACK, 0);
     ALSERT("opening audio device");
 
     /* First ALSA hardware settings */
@@ -106,12 +105,17 @@ static void *_msynth_thread_main(void *arg)
     ALSERT("requesting hw default params");
 
     /* Disable software resampling */
-    err = snd_pcm_hw_params_set_rate_resample(pcm, hw_p, 0);
+    err = snd_pcm_hw_params_set_rate_resample(pcm, hw_p, config.resample);
     ALSERT("disabling software resampling");
 
-    /* Get maximum hardware samplerate */
-    err = snd_pcm_hw_params_get_rate_max(hw_p, &srate, &dir);
-    ALSERT("requesting maximum hardware samplerate");
+    /* Configure sample rate */
+    if (config.srate != -1)
+        srate = config.srate;
+    else {
+        /* Get maximum hardware samplerate */
+        err = snd_pcm_hw_params_get_rate_max(hw_p, &srate, &dir);
+        ALSERT("requesting maximum hardware samplerate");
+    }
 
     /* Set sample rate 
      * snd_pcm_hw_params_set_rate_near(pcn, hw_p, *rate,
@@ -134,31 +138,42 @@ static void *_msynth_thread_main(void *arg)
     err = snd_pcm_hw_params_set_channels(pcm, hw_p, 2);
     ALSERT("switching to 2.0ch audio");
 
-    /* Since we want the interactive synthesizer to be very responsive
-     * select a minimum buffer size.
-     *
-     * FIXME: since a minimum latency buffer results in non-stop XRUNs
-     * for now make do with approximately 0.2s latency, which is acceptable.
-     */
-    err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw_p, &buffer_usec, &dir);
-    ALSERT("setting buffer time");
+    if (config.buffer_time != -1) {
+        /* Set configured buffer time */
+        err = snd_pcm_hw_params_set_buffer_time_near(pcm, hw_p,
+            &config.buffer_time, &dir);
+        ALSERT("setting buffer time");
 
-    /* Retrieve resulting buffer size */
-    err = snd_pcm_hw_params_get_buffer_size(hw_p, &buffer_size);
-    ALSERT("getting buffer size");
+        /* Fetch resulting size */
+        err = snd_pcm_hw_params_get_buffer_size(hw_p, &buffer_size);
+        ALSERT("getting buffer size");
+    } else {
+        /* Since we want the interactive synthesizer to be very responsive
+         * select a minimum buffer size.
+         */
+        err = snd_pcm_hw_params_set_buffer_size_first(pcm, hw_p, &buffer_size);
+        ALSERT("setting buffer size");
+    }
+
     printf("synthread: Selected buffersize of %lu\n", buffer_size);
     printf("synthread: Response delay is approximately %.2f ms\n",
         (double)buffer_size / (double)srate * 1000.0);
 
-    /* Select a period time of half the buffer time
-     * since this improves processing performance
-     */
-    err = snd_pcm_hw_params_set_period_time_near(pcm, hw_p, &period_usec, &dir);
-    ALSERT("setting period time");
+    if (config.period_time != -1) {
+        err = snd_pcm_hw_params_set_period_time_near(pcm, hw_p,
+            &config.period_time, &dir);
+        ALSERT("setting period time");
 
-    /* Retrieve resulting period size */
-    err = snd_pcm_hw_params_get_period_size(hw_p, &period_size, &dir);
-    ALSERT("getting period size");
+        err = snd_pcm_hw_params_get_period_size(hw_p, &period_size, &dir);
+        ALSERT("getting period size");
+    } else {
+        /* Select a period time of half the buffer time
+         * since this improves processing performance
+         */
+        err = snd_pcm_hw_params_set_period_size_last(pcm, hw_p, &period_size, &dir);
+        ALSERT("setting period size");
+    }
+
     if (dir)
         printf("synthread: Selected period size near %lu\n", period_size);
     else

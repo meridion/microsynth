@@ -1,0 +1,2 @@
+https://ccrma.stanford.edu/~jos/filters/
+http://www.dspguide.com/ch14.htm
