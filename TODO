@@ -1,12 +1,16 @@
 
 - local storage
 - function definitions
-- settings volume
+- Update Makefile
+- xargs functions
+- ADSR envelopes
+- filters
 
 # 0.1.1
-- filters
+- variables
 - low latency default setup
 - audio setup CLI
+- settings volume (DONE)
 - variable argument functions (DONE)
 - whitenoise function (DONE)
 - sample rewinding/delay (DONE)

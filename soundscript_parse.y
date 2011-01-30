@@ -26,7 +26,7 @@ void yyerror(const char *s);
 
 %token <number> NUM
 %token <name> IDENT
-%token EOL GARBAGE
+%token EOL GARBAGE VOLUME
 %type <mod> number expr_deep expr_mul expr_add statement
 %type <args> any_args require_args
 
@@ -43,6 +43,15 @@ line: statement EOL {
             /* Change synthesizer signal */
             synth_replace($1);
         }
+    | VOLUME EOL {
+        printf("Current volume: %.1f%%\n", synth_get_volume());
+    }
+    | VOLUME NUM EOL {
+            if (0.f <= $2 && $2 <= 100.f)
+                synth_set_volume($2);
+            else
+                puts("Volume must be percentage from 0% to 100%");
+        }
     ;
 
 statement:
@@ -51,8 +60,8 @@ statement:
         }
 
     | assignment { 
-            puts("Assignments are currently discarded, sorry");
-            $$ = NULL;
+            yyerror("Assignments are currently discarded, sorry");
+            YYERROR;
         }
     ;
 

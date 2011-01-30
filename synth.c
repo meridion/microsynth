@@ -37,7 +37,7 @@ static snd_pcm_uframes_t
 static unsigned int buffer_usec = 500000;
 static unsigned int period_usec = 250000;
 static volatile int shutdown = 0;
-static float volume = 0.5f;
+static volatile float volume = 0.5f;
 static struct _msynth_modifier *root = &msynth_null_signal;
 
 /* microsynth stats */
@@ -379,5 +379,18 @@ void synth_free_recursive(msynth_modifier mod)
         free(mod->storage);
     free(mod);
     return;
+}
+
+/* Change synthesizer volume */
+void synth_set_volume(float new_volume)
+{
+    volume = new_volume / 100.0f;
+    return;
+}
+
+/* Request current synthesizer volume */
+float synth_get_volume()
+{
+    return volume * 100.0f;
 }
 

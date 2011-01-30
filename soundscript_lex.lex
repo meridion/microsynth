@@ -18,6 +18,9 @@ ident           [A-Za-z_][0-9A-Za-z_]*
 
 %%
 
+    /* keywords */
+volume          return VOLUME;
+
     /* Basic types */
 {ident}             yylval.name = do_dup(yytext); return IDENT;
 [0-9]+\.[0-9]+(e-?[0-9]+)?f?      {

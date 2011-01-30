@@ -56,4 +56,6 @@ int synth_recover(int err);
 float synth_eval(msynth_modifier mod, struct sampleclock sc);
 void synth_replace(msynth_modifier tree);
 void synth_free_recursive(msynth_modifier mod);
+void synth_set_volume(float new_volume);
+float synth_get_volume();
 
