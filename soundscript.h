@@ -18,6 +18,7 @@ void soundscript_clear_dups();
 
 /* Soundscript build interface */
 msynth_modifier ssb_number(float num);
+msynth_modifier ssb_variable(char *varname);
 msynth_modifier ssb_add(msynth_modifier a, msynth_modifier b);
 msynth_modifier ssb_sub(msynth_modifier a, msynth_modifier b);
 msynth_modifier ssb_mul(msynth_modifier a, msynth_modifier b);
@@ -30,4 +31,6 @@ msynth_modifier ssb_func0(char *func_name);
 msynth_modifier ssb_func1(char *func_name, msynth_modifier in);
 msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
     msynth_modifier b);
+
+/* Soundscript variables */
 

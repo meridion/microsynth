@@ -20,7 +20,8 @@ struct ss_func_def {
 static GHashTable *gc_ht = NULL;
 
 /* Symbol table */
-static GHashTable *symtab;
+static GHashTable *symtab; /* Function table */
+static GHashTable *vartab; /* Variable table */
 
 /* Parse a command line */
 void soundscript_parse(char *line)
@@ -71,6 +72,7 @@ void soundscript_init()
 {
     gc_ht = g_hash_table_new(NULL, NULL);
     symtab = g_hash_table_new(g_str_hash, g_str_equal);
+    vartab = g_hash_table_new(g_str_hash, g_str_equal);
 
     /* Setup built-in functions */
 
@@ -172,6 +174,26 @@ msynth_modifier ssb_number(float num)
     newmod->data.constant = num;
     newmod->storage = NULL;
 
+    /* Update GC */
+    soundscript_mark_no_use(newmod);
+
+    return newmod;
+}
+
+/* Variable reference */
+msynth_modifier ssb_variable(char *varname)
+{
+    msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
+    assert(newmod);
+
+    newmod->type = MSMT_VARIABLE;
+    newmod->data.varname = strdup(varname);
+    assert(newmod->data.varname);
+    newmod->storage = NULL;
+
+    /* Update GC */
+    soundscript_mark_no_use(newmod);
+
     return newmod;
 }
 
@@ -265,7 +287,7 @@ msynth_modifier ssb_delay(msynth_modifier in, int delay)
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
 
-    newmod->type = MSMT_NODE;
+    newmod->type = MSMT_NODE1;
     newmod->data.node.func = tf_delay;
     newmod->data.node.in = in;
     newmod->storage = malloc(sizeof(struct _tf_delay_info) +
@@ -343,7 +365,7 @@ msynth_modifier ssb_func1(char *func_name, msynth_modifier in)
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
 
-    newmod->type = MSMT_NODE;
+    newmod->type = MSMT_NODE1;
     newmod->data.node.in = in;
     newmod->data.node.func =
         (msynth_modfunc)
@@ -378,5 +400,23 @@ msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
     soundscript_mark_no_use(newmod);
 
     return newmod;
+}
+
+/* -------- Soundscript variables -------- */
+
+/* Set var <vname> to <mod> */
+void ssv_set_var(char *vname, msynth_modifier mod)
+{
+    g_hash_table_insert(vartab, vname, mod);
+}
+
+/* Regroup variables */
+void ssv_regroup()
+{
+}
+
+/* Evaluate variables */
+void ssv_eval(struct sampleclock sc)
+{
 }
 

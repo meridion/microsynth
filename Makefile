@@ -28,12 +28,12 @@ soundscript_parse.c soundscript_parse.h: soundscript_parse.y
 	bison -o soundscript_parse.c --defines=soundscript_parse.h soundscript_parse.y
 
 ## dependencies
-soundscript_lex.o: soundscript_parse.h
-soundscript_parse.o: soundscript_lex.h
-soundscript.o: soundscript_lex.h soundscript_parse.h soundscript.h
+soundscript_lex.o: sampleclock.h synth.h soundscript_parse.h
+soundscript_parse.o: sampleclock.h synth.h soundscript_lex.h soundscript_parse.h soundscript.h transform.h
+soundscript.o: sampleclock.h synth.h gen.h transform.h soundscript_lex.h soundscript_parse.h soundscript.h
 gen.o: gen.h sampleclock.h
-main.o: synth.h soundscript.h main.h
-synth.o: synth.h sampleclock.h main.h
+main.o: main.h sampleclock.h synth.h soundscript.h
+synth.o: main.h sampleclock.h gen.h synth.h
 sampleclock.o: sampleclock.h
 transform.o: sampleclock.h synth.h transform.h
 

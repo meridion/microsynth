@@ -44,8 +44,8 @@ line: statement EOL {
             synth_replace($1);
         }
     | VOLUME EOL {
-        printf("Current volume: %.1f%%\n", synth_get_volume());
-    }
+            printf("Current volume: %.1f%%\n", synth_get_volume());
+        }
     | VOLUME NUM EOL {
             if (0.f <= $2 && $2 <= 100.f)
                 synth_set_volume($2);

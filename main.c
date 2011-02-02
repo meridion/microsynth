@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
     /* Setup synthesizer */
     msynth_init();
     soundscript_init();
+    puts("microsynth " MSYNTH_VERSION);
 
     line = readline("msynth> ");
 

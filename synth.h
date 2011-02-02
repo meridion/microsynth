@@ -31,6 +31,7 @@ struct _msynth_modifier {
         } node0;
 
         float constant;
+        char *varname;
     } data;
 };
 
@@ -40,11 +41,12 @@ struct _msynth_frame {
 };
 
 /* synth modification types */
-#define MSMT_INVALID    -1
+#define MSMT_INVALID   -1
 #define MSMT_CONSTANT   0
-#define MSMT_NODE0      1
-#define MSMT_NODE       2
-#define MSMT_NODE2      3
+#define MSMT_VARIABLE   1
+#define MSMT_NODE0      2
+#define MSMT_NODE1      3
+#define MSMT_NODE2      4
 
 /* NULL signal */
 extern struct _msynth_modifier msynth_null_signal;
