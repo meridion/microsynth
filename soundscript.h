@@ -33,4 +33,9 @@ msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
     msynth_modifier b);
 
 /* Soundscript variables */
+typedef struct _soundscript_var {
+    msynth_modifier vargraph;
+    float last_eval;
+    int mark;
+} *soundscript_var;
 
