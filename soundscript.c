@@ -10,6 +10,9 @@
 #include "soundscript_parse.h"
 #include "soundscript.h"
 
+/* Local function definitions */
+void _ssv_recursively_mark_graphs(msynth_modifier mod);
+
 /* Soundscript function definition */
 struct ss_func_def {
     void *func;
@@ -143,20 +146,20 @@ void soundscript_mark_no_use(msynth_modifier mod)
 /* Destroy all unused pointers and clear GC */
 void soundscript_run_gc(void)
 {
-    GList *list, iter;
+    GList *list, *iter;
     msynth_modifier mod;
 
     iter = list = g_hash_table_get_values(gc_ht);
 
     /* While elements in iter, free and update */
     while (iter) {
-        mod = g_iter_nth_data(iter, 0);
+        mod = g_list_nth_data(iter, 0);
 
         /* Remove object */
         synth_free_recursive(mod);
 
         /* grab next item in iter */
-        iter = g_iter_next(iter);
+        iter = g_list_next(iter);
     }
 
     /* Clear GC table */
@@ -421,11 +424,18 @@ void ssv_set_var(char *vname, msynth_modifier mod)
 }
 
 /* Return the evaluation of var <vname> */
-void ssv_get_var_eval(char *vname)
+float ssv_get_var_eval(char *vname)
 {
-    soundscript_var v = g_hash_table(vartab, vname);
+    soundscript_var v = g_hash_table_lookup(vartab, vname);
     assert(v);
     return v->last_eval;
+}
+
+/* Return variable by name */
+soundscript_var ssv_get_var(char *vname)
+{
+    soundscript_var v = g_hash_table_lookup(vartab, vname);
+    return v;
 }
 
 /* Compare two graphs' variable usage
@@ -449,7 +459,7 @@ static int _compare_graphs(const void *g1, const void *g2)
     if (r) {
         /* Circular/Mutual use */
         if (r == SSV_USAGE_CIRCULAR)
-            return 0
+            return 0;
 
         /* Non-circular usage, g1 only uses g2, evaluate later */
         else
@@ -472,20 +482,20 @@ static int _compare_graphs(const void *g1, const void *g2)
  *      SSV_USAGE_CIRCULAR: mod1 uses mod2,
  *                          but mod2 eventually references back to mod1.
  */
-int ssv_makes_use_of(soundscript_val mod1, soundscript_val mod2)
+int ssv_makes_use_of(soundscript_var mod1, soundscript_var mod2)
 {
     /* Mark are variables used (directly or indirectly) by mod1 */
-    ssv_recursive_mark_vars(mod1);
+    ssv_recursively_mark_vars(mod1);
     int usage;
 
-    GList *list, iter;
+    GList *list, *iter;
     soundscript_var v;
 
     iter = list = g_hash_table_get_values(vartab);
 
     /* Check all variables and unmark them */
     while (iter) {
-        v = (soundscript_var)g_iter_nth_data(iter, 0);
+        v = (soundscript_var)g_list_nth_data(iter, 0);
 
         if (v->mark & 0x2) {
             /* Non circular usage */
@@ -501,7 +511,7 @@ int ssv_makes_use_of(soundscript_val mod1, soundscript_val mod2)
         v->mark = 0;
 
         /* grab next item in iter */
-        iter = g_iter_next(iter);
+        iter = g_list_next(iter);
     }
 
     /* Free iterated list */
@@ -517,7 +527,7 @@ int ssv_makes_use_of(soundscript_val mod1, soundscript_val mod2)
 }
 
 /* Recursively mark variables used by variable */
-void ssv_recursive_mark_vars(soundscript_var var)
+void ssv_recursively_mark_vars(soundscript_var var)
 {
     /* This variable was processed already */
     if (var->mark & 0x1)
@@ -531,13 +541,14 @@ void ssv_recursive_mark_vars(soundscript_var var)
 }
 
 /* Recursively mark variables used in sound graph */
-void _svv_recursively_mark_graphs(msynth_modifier mod)
+void _ssv_recursively_mark_graphs(msynth_modifier mod)
 {
     soundscript_var var;
 
     switch(mod->type) {
         case MSMT_VARIABLE:
-            var = ssv_get_var(mod->varname);
+            var = ssv_get_var(mod->data.varname);
+            assert(var);
 
             /* This is the actual usage mark */
             var->mark |= 0x2;
@@ -545,7 +556,7 @@ void _svv_recursively_mark_graphs(msynth_modifier mod)
             break;
 
         case MSMT_NODE1:
-            _ssv_recursively_mark_graphs(mod->data.node1.in);
+            _ssv_recursively_mark_graphs(mod->data.node.in);
             break;
 
         case MSMT_NODE2:
@@ -573,10 +584,10 @@ void ssv_regroup()
     /* Fetch all variables and store them in evaluation array */
     while (iter) {
         /* Store var in array */
-        eval_list[i++] = (soundscript_var)g_iter_nth_data(iter, 0);
+        eval_list[i++] = (soundscript_var)g_list_nth_data(iter, 0);
 
         /* grab next item in iter */
-        iter = g_iter_next(iter);
+        iter = g_list_next(iter);
     }
     g_list_free(list);
 
@@ -590,10 +601,10 @@ void ssv_regroup()
 /* Evaluate variables */
 void ssv_eval(struct sampleclock sc)
 {
-    GSList iter = eval_list;
+    GSList *iter = eval_list;
     while (iter) {
         soundscript_var v = g_list_nth_data(iter, 0);
-        v->last_eval = synth_eval(v->vargraph);
+        v->last_eval = synth_eval(v->vargraph, sc);
     }
 }
 
