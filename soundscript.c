@@ -13,6 +13,25 @@
 /* Local function definitions */
 void _ssv_recursively_mark_graphs(msynth_modifier mod);
 
+/* Cast override functions (work around for warnings) */
+#define __DEF_FORCE_CAST(INTYPE, OUTTYPE, NAME) \
+static OUTTYPE __force_cast_ ## NAME(INTYPE pin) \
+{ \
+    union _force_cast { \
+        INTYPE pin; \
+        OUTTYPE pout; \
+    } fc; \
+    fc.pin = pin; \
+    return fc.pout; \
+}
+
+__DEF_FORCE_CAST(msynth_modfunc0, void*, from_func0)
+__DEF_FORCE_CAST(msynth_modfunc, void*, from_func1)
+__DEF_FORCE_CAST(msynth_modfunc2, void*, from_func2)
+__DEF_FORCE_CAST(void*, msynth_modfunc0, to_func0)
+__DEF_FORCE_CAST(void*, msynth_modfunc, to_func1)
+__DEF_FORCE_CAST(void*, msynth_modfunc2, to_func2)
+
 /* Soundscript function definition */
 struct ss_func_def {
     void *func;
@@ -83,29 +102,47 @@ void soundscript_init()
     /* Setup built-in functions */
 
     /* Oscillators */
-    g_hash_table_insert(symtab, "sin", ssi_def_func(gen_sin, 1));
-    g_hash_table_insert(symtab, "cos", ssi_def_func(gen_cos, 1));
-    g_hash_table_insert(symtab, "saw", ssi_def_func(gen_saw, 1));
-    g_hash_table_insert(symtab, "rsaw", ssi_def_func(gen_rsaw, 1));
-    g_hash_table_insert(symtab, "triangle", ssi_def_func(gen_triangle, 1));
-    g_hash_table_insert(symtab, "pulse", ssi_def_func(gen_pulse, 1));
-    g_hash_table_insert(symtab, "square", ssi_def_func(gen_square, 1));
-    g_hash_table_insert(symtab, "whitenoise", ssi_def_func(gen_whitenoise, 0));
+    g_hash_table_insert(symtab, "sin", ssi_def_func(__force_cast_from_func1(gen_sin), 1));
+    g_hash_table_insert(symtab, "cos", ssi_def_func(
+        __force_cast_from_func1(gen_cos), 1));
+    g_hash_table_insert(symtab, "saw", ssi_def_func(
+        __force_cast_from_func1(gen_saw), 1));
+    g_hash_table_insert(symtab, "rsaw", ssi_def_func(
+        __force_cast_from_func1(gen_rsaw), 1));
+    g_hash_table_insert(symtab, "triangle", ssi_def_func(
+        __force_cast_from_func1(gen_triangle), 1));
+    g_hash_table_insert(symtab, "pulse", ssi_def_func(
+        __force_cast_from_func1(gen_pulse), 1));
+    g_hash_table_insert(symtab, "square", ssi_def_func(
+        __force_cast_from_func1(gen_square), 1));
+    g_hash_table_insert(symtab, "whitenoise", ssi_def_func(
+        __force_cast_from_func0(gen_whitenoise), 0));
 
     /* Transformers */
-    g_hash_table_insert(symtab, "chipify", ssi_def_func(tf_chipify, 1));
+    g_hash_table_insert(symtab, "chipify", ssi_def_func(
+        __force_cast_from_func1(tf_chipify), 1));
 
     /* Mathematical operations */
-    g_hash_table_insert(symtab, "add", ssi_def_func(tf_add, 2));
-    g_hash_table_insert(symtab, "sub", ssi_def_func(tf_sub, 2));
-    g_hash_table_insert(symtab, "mul", ssi_def_func(tf_mul, 2));
-    g_hash_table_insert(symtab, "div", ssi_def_func(tf_div, 2));
-    g_hash_table_insert(symtab, "min", ssi_def_func(tf_min, 2));
-    g_hash_table_insert(symtab, "max", ssi_def_func(tf_max, 2));
-    g_hash_table_insert(symtab, "abs", ssi_def_func(tf_abs, 1));
-    g_hash_table_insert(symtab, "clamp", ssi_def_func(tf_clamp, 2));
-    g_hash_table_insert(symtab, "floor", ssi_def_func(tf_floor, 1));
-    g_hash_table_insert(symtab, "ceil", ssi_def_func(tf_ceil, 1));
+    g_hash_table_insert(symtab, "add", ssi_def_func(
+        __force_cast_from_func2(tf_add), 2));
+    g_hash_table_insert(symtab, "sub", ssi_def_func(
+        __force_cast_from_func2(tf_sub), 2));
+    g_hash_table_insert(symtab, "mul", ssi_def_func(
+        __force_cast_from_func2(tf_mul), 2));
+    g_hash_table_insert(symtab, "div", ssi_def_func(
+        __force_cast_from_func2(tf_div), 2));
+    g_hash_table_insert(symtab, "min", ssi_def_func(
+        __force_cast_from_func2(tf_min), 2));
+    g_hash_table_insert(symtab, "max", ssi_def_func(
+        __force_cast_from_func2(tf_max), 2));
+    g_hash_table_insert(symtab, "abs", ssi_def_func(
+        __force_cast_from_func1(tf_abs), 1));
+    g_hash_table_insert(symtab, "clamp", ssi_def_func(
+        __force_cast_from_func2(tf_clamp), 2));
+    g_hash_table_insert(symtab, "floor", ssi_def_func(
+        __force_cast_from_func1(tf_floor), 1));
+    g_hash_table_insert(symtab, "ceil", ssi_def_func(
+        __force_cast_from_func1(tf_ceil), 1));
 
     return;
 }
@@ -356,8 +393,8 @@ msynth_modifier ssb_func0(char *func_name)
 
     newmod->type = MSMT_NODE0;
     newmod->data.node0.func =
-        (msynth_modfunc)
-        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func;
+        __force_cast_to_func0(
+        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func);
     newmod->storage = NULL;
 
     /* Update GC state */
@@ -375,8 +412,8 @@ msynth_modifier ssb_func1(char *func_name, msynth_modifier in)
     newmod->type = MSMT_NODE1;
     newmod->data.node.in = in;
     newmod->data.node.func =
-        (msynth_modfunc)
-        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func;
+        __force_cast_to_func1(
+        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func);
     newmod->storage = NULL;
 
     /* Update GC state */
@@ -397,8 +434,8 @@ msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
     newmod->data.node2.a = a;
     newmod->data.node2.b = b;
     newmod->data.node2.func =
-        (msynth_modfunc)
-        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func;
+        __force_cast_to_func2(
+        ((struct ss_func_def*)g_hash_table_lookup(symtab, func_name))->func);
     newmod->storage = NULL;
 
     /* Update GC state */
@@ -451,9 +488,9 @@ soundscript_var ssv_get_var(char *vname)
 static int _compare_graphs(const void *g1, const void *g2)
 {
     int r;
-    msynth_modifier
-        mod1 = *(msynth_modifier*)g1,
-        mod2 = *(msynth_modifier*)g2;
+    soundscript_var
+        mod1 = *(soundscript_var*)g1,
+        mod2 = *(soundscript_var*)g2;
 
     r = ssv_makes_use_of(mod1, mod2);
     if (r) {
@@ -484,12 +521,12 @@ static int _compare_graphs(const void *g1, const void *g2)
  */
 int ssv_makes_use_of(soundscript_var mod1, soundscript_var mod2)
 {
-    /* Mark are variables used (directly or indirectly) by mod1 */
-    ssv_recursively_mark_vars(mod1);
-    int usage;
-
+    int usage = 0x0;
     GList *list, *iter;
     soundscript_var v;
+
+    /* Mark are variables used (directly or indirectly) by mod1 */
+    ssv_recursively_mark_vars(mod1);
 
     iter = list = g_hash_table_get_values(vartab);
 
@@ -499,11 +536,11 @@ int ssv_makes_use_of(soundscript_var mod1, soundscript_var mod2)
 
         if (v->mark & 0x2) {
             /* Non circular usage */
-            if (v->vargraph == mod2)
+            if (v == mod2)
                 usage |= 1;
 
             /* Circular usage */
-            if (v->vargraph == mod1)
+            if (v == mod1)
                 usage |= 2;
         }
 
@@ -601,10 +638,13 @@ void ssv_regroup()
 /* Evaluate variables */
 void ssv_eval(struct sampleclock sc)
 {
-    GSList *iter = eval_list;
-    while (iter) {
-        soundscript_var v = g_list_nth_data(iter, 0);
+    int i = 0, size = g_hash_table_size(vartab);
+
+    for (; i < size; i++) {
+        soundscript_var v = eval_list[i];
         v->last_eval = synth_eval(v->vargraph, sc);
     }
+
+    return;
 }
 

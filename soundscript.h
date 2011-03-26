@@ -49,7 +49,7 @@ void ssv_set_var(char *vname, msynth_modifier mod);
 float ssv_get_var_eval(char *vname);
 soundscript_var ssv_get_var(char *vname);
 int ssv_makes_use_of(soundscript_var mod1, soundscript_var mod2);
-void ssv_recursive_mark_vars(soundscript_var var);
+void ssv_recursively_mark_vars(soundscript_var var);
 void ssv_regroup();
 void ssv_eval(struct sampleclock sc);
 
