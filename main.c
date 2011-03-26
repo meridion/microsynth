@@ -107,7 +107,7 @@ static int msynth_parse_args(int argc, char *argv[])
                     "       used to buffer samples to. (e.g. 500000)\n"
                     "    -p Set period time in microseconds.\n"
                     "       The period is the amount of samples written at\n"
-                    "       once to the soundcard. Is usually smaller than"
+                    "       once to the soundcard. Is usually less than"
                     " half\n"
                     "       the buffer time. (e.g. 250000)\n", argv[0]);
                 printf(

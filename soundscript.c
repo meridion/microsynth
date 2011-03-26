@@ -73,6 +73,9 @@ void soundscript_parse(char *line)
     soundscript_run_gc();
     free(mod_str);
 
+    /* Handle variables */
+    ssv_regroup();
+
     return;
 }
 

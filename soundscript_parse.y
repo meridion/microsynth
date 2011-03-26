@@ -27,7 +27,7 @@ void yyerror(const char *s);
 %token <number> NUM
 %token <name> IDENT
 %token EOL GARBAGE VOLUME
-%type <mod> number expr_deep expr_mul expr_add statement
+%type <mod> number expr_deep expr_mul expr_add
 %type <args> any_args require_args
 
 %%
@@ -36,7 +36,12 @@ script:
     | script line
     ;
 
-line: statement EOL {
+line: EOL
+    | IDENT '=' expr_add {
+            soundscript_mark_use($3);
+            ssv_set_var($1, $3);
+        }
+    | expr_add EOL {
             /* GC should not delete this */
             soundscript_mark_use($1);
 
@@ -52,21 +57,6 @@ line: statement EOL {
             else
                 puts("Volume must be percentage from 0% to 100%");
         }
-    ;
-
-statement:
-    | expr_add {
-            $$ = $1;
-        }
-
-    | assignment { 
-            yyerror("Assignments are currently discarded, sorry");
-            YYERROR;
-        }
-    ;
-
-assignment: IDENT '=' assignment
-    | IDENT '=' expr_add
     ;
 
 expr_add: expr_mul
@@ -116,8 +106,11 @@ expr_deep: IDENT '(' any_args ')' {
     | '(' expr_add ')' { $$ = $2; }
     | number { $$ = $1; }
     | IDENT {
-            fprintf(stderr, "No such variable: '%s'\n", $1);
-            YYERROR;
+            if (!ssv_get_var($1)) {
+                fprintf(stderr, "No such variable: '%s'\n", $1);
+                YYERROR;
+            }
+            $$ = ssb_variable($1);
         }
     | expr_deep '[' NUM ']' {
             $$ = ssb_delay($1, (unsigned int)roundf($3));

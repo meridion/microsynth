@@ -7,12 +7,14 @@
 
 #include <asoundlib.h>
 #include <pthread.h>
+#include <glib.h>
 
 /* msynth headers */
 #include "main.h"
 #include "sampleclock.h"
 #include "gen.h"
 #include "synth.h"
+#include "soundscript.h"
 
 /* msynth NULL signal */
 struct _msynth_modifier msynth_null_signal;
@@ -243,6 +245,9 @@ static void *_msynth_thread_main(void *arg)
         /* Only during generation we need the synth tree to be static */
         pthread_mutex_lock(&mutex);
         for (i = 0; i < period_size; i++) {
+            /* Evaluate variables */
+            ssv_eval(sc);
+
             sample = (int)(32767.5 * synth_eval(root, sc) * volume);
 
             /* Clip samples */
@@ -367,6 +372,9 @@ float synth_eval(msynth_modifier mod, struct sampleclock sc)
             return mod->data.node2.func(sc, &mod->storage,
                 synth_eval(mod->data.node2.a, sc),
                 synth_eval(mod->data.node2.b, sc));
+
+        case MSMT_VARIABLE:
+            return ssv_get_var_eval(mod->data.varname);
 
         default:;
     }

@@ -33,7 +33,7 @@ soundscript_parse.o: sampleclock.h synth.h soundscript_lex.h soundscript_parse.h
 soundscript.o: sampleclock.h synth.h gen.h transform.h soundscript_lex.h soundscript_parse.h soundscript.h
 gen.o: gen.h sampleclock.h
 main.o: main.h sampleclock.h synth.h soundscript.h
-synth.o: main.h sampleclock.h gen.h synth.h
+synth.o: main.h sampleclock.h gen.h synth.h soundscript.h
 sampleclock.o: sampleclock.h
 transform.o: sampleclock.h synth.h transform.h
 
