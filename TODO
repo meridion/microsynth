@@ -7,14 +7,16 @@
 - help command
 - special variables (samplerate, seconds, etc.)
 
-# 0.1.1
+# 0.1.1 (locked)
 - variables (and infinite response)
+- Stereo
 - low latency default setup (DONE)
 - audio setup CLI (DONE)
 - settings volume (DONE)
 - variable argument functions (DONE)
 - whitenoise function (DONE)
 - sample rewinding/delay (DONE)
+- README
 
 ### Completed features ###
 

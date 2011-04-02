@@ -9,4 +9,5 @@ saw(110 * (saw(0.5) / 2 + 0.5)) * whitenoise()
 (saw(220)[0] + saw(220)[20]) * 0.03
 (square(40)[0] + cos(0.1) * square(40)[1] + cos(0.1)[20] * square(40)[2])
 (square(50) + square(50)[100] + square(50)[120] + square(50)[140] + square(50)[160] + square(50)[180] + square(50)[200]) / 7
+reverb = clamp(0.5 * in + 0.6 * reverb[2000] + 0.25 * reverb[4000] + 0.125 * reverb[8000], 2)
 

@@ -358,7 +358,7 @@ msynth_modifier ssb_delay(msynth_modifier in, int delay)
 
 /* ----- Function calls ------ */
 
-/* Check for generator function (Disabled) */
+/* Check for generator function */
 int ssb_can_func0(char *func_name)
 {
     struct ss_func_def *def = g_hash_table_lookup(symtab, func_name);
@@ -388,7 +388,7 @@ int ssb_can_func2(char *func_name)
     return def->args == 2;
 }
 
-/* Function generating signal (Disabled) */
+/* Function generating signal (such as whitenoise) */
 msynth_modifier ssb_func0(char *func_name)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
@@ -454,13 +454,21 @@ msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
 /* Set var <vname> to <mod> */
 void ssv_set_var(char *vname, msynth_modifier mod)
 {
-    soundscript_var new = malloc(sizeof(struct _soundscript_var));
-    assert(new);
+    soundscript_var new = g_hash_table_lookup(vartab, vname);
+
+    /* Replace existing var or allocate if necessary */
+    if (new) {
+        synth_free_recursive(new->vargraph);
+    } else {
+        new = malloc(sizeof(struct _soundscript_var));
+        assert(new);
+        g_hash_table_insert(vartab, vname, new);
+    }
 
     new->vargraph = mod;
     new->last_eval = 0.;
 
-    g_hash_table_insert(vartab, vname, new);
+    return;
 }
 
 /* Return the evaluation of var <vname> */
