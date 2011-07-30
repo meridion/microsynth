@@ -6,10 +6,11 @@
 - filters
 - help command
 - special variables (samplerate, seconds, etc.)
+- Make GC functions more obvious (naming)
 
 # 0.1.1 (locked)
 - variables (and infinite response)
-- Stereo
+- Stereo (DONE)
 - low latency default setup (DONE)
 - audio setup CLI (DONE)
 - settings volume (DONE)

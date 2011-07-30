@@ -9,8 +9,8 @@ gpointer ssi_def_func(void *func, int args);
 void soundscript_shutdown();
 
 /* Soundscript GC */
-void soundscript_mark_use(msynth_modifier mod);
-void soundscript_mark_no_use(msynth_modifier mod);
+msynth_modifier soundscript_mark_use(msynth_modifier mod);
+msynth_modifier soundscript_mark_no_use(msynth_modifier mod);
 void soundscript_run_gc(void);
 
 /* Soundscript lexer/string GC */
@@ -48,8 +48,12 @@ typedef struct _soundscript_var {
 void ssv_set_var(char *vname, msynth_modifier mod);
 float ssv_get_var_eval(char *vname);
 soundscript_var ssv_get_var(char *vname);
-int ssv_makes_use_of(soundscript_var mod1, soundscript_var mod2);
+int ssv_makes_use_of(soundscript_var var1, soundscript_var var2);
 void ssv_recursively_mark_vars(soundscript_var var);
 void ssv_regroup();
 void ssv_eval(struct sampleclock sc);
+
+/* Variable locking */
+void ssv_lock_vars();
+void ssv_unlock_vars();
 

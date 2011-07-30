@@ -35,8 +35,8 @@ int main(int argc, char *argv[])
         return config.exit_code;
 
     /* Setup synthesizer */
-    msynth_init();
     soundscript_init();
+    msynth_init();
     puts("microsynth " MSYNTH_VERSION);
 
     line = readline("msynth> ");
@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
         puts("");
 
     /* Shutdown synthesizer */
-    soundscript_shutdown();
     msynth_shutdown();
+    soundscript_shutdown();
 
     return config.exit_code;
 }

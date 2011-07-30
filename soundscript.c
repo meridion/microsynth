@@ -1,6 +1,7 @@
 /* microsynth - Sound scripting */
 #include <assert.h>
 #include <glib.h>
+#include <pthread.h>
 
 #include "sampleclock.h"
 #include "synth.h"
@@ -12,6 +13,9 @@
 
 /* Local function definitions */
 void _ssv_recursively_mark_graphs(msynth_modifier mod);
+
+/* Lock variable assignments when performing synthesis */
+static pthread_mutex_t synth_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Cast override functions (work around for warnings) */
 #define __DEF_FORCE_CAST(INTYPE, OUTTYPE, NAME) \
@@ -95,7 +99,7 @@ gpointer ssi_def_func(void *func, int args)
     return def;
 }
 
-/* Initialize soundscript subsystem */
+/* Initialize soundscript subsystem - THIS FUNCTION MUST BE CALLED BEFORE msynth_init */
 void soundscript_init()
 {
     gc_ht = g_hash_table_new(NULL, NULL);
@@ -159,7 +163,7 @@ void soundscript_shutdown()
 }
 
 /* Mark mod pointer as used */
-void soundscript_mark_use(msynth_modifier mod)
+msynth_modifier soundscript_mark_use(msynth_modifier mod)
 {
      /*
      * A hashtable entry means the garbage collector
@@ -168,11 +172,11 @@ void soundscript_mark_use(msynth_modifier mod)
      */
     g_hash_table_remove(gc_ht, mod);
 
-    return;
+    return mod;
 }
 
 /* Mark mod pointer as unused */
-void soundscript_mark_no_use(msynth_modifier mod)
+msynth_modifier soundscript_mark_no_use(msynth_modifier mod)
 {
      /*
      * Insert the mod as key and value to mark it
@@ -180,7 +184,7 @@ void soundscript_mark_no_use(msynth_modifier mod)
      */
      g_hash_table_insert(gc_ht, mod, mod);
 
-    return;
+    return mod;
 }
 
 /* Destroy all unused pointers and clear GC */
@@ -210,6 +214,7 @@ void soundscript_run_gc(void)
 }
 
 /* -------- Soundscript Build Interface ---------- */
+/* The following functions are all garbage collected, use with caution */
 
 /* Constant signal */
 msynth_modifier ssb_number(float num)
@@ -454,7 +459,12 @@ msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
 /* Set var <vname> to <mod> */
 void ssv_set_var(char *vname, msynth_modifier mod)
 {
-    soundscript_var new = g_hash_table_lookup(vartab, vname);
+    soundscript_var new; 
+
+    /* Protect against use while performings synthesis */
+    ssv_lock_vars();
+
+    new = g_hash_table_lookup(vartab, vname);
 
     /* Replace existing var or allocate if necessary */
     if (new) {
@@ -468,6 +478,7 @@ void ssv_set_var(char *vname, msynth_modifier mod)
     new->vargraph = mod;
     new->last_eval = 0.;
 
+    ssv_unlock_vars();
     return;
 }
 
@@ -657,5 +668,17 @@ void ssv_eval(struct sampleclock sc)
     }
 
     return;
+}
+
+/* Lock variable assignments */
+void ssv_lock_vars()
+{
+    pthread_mutex_lock(&synth_lock);
+}
+
+/* Unlock variable assignments */
+void ssv_unlock_vars()
+{
+    pthread_mutex_unlock(&synth_lock);
 }
 

@@ -1,0 +1,139 @@
+$ ./microsynth 
+synthread: started
+synthread: Detected samplerate of 48000
+synthread: Selected buffersize of 2048
+synthread: Response delay is approximately 42.67 ms
+synthread: Selected period size of 1024
+synthread: Audio system configured.
+microsynth v0.1.1-devel
+msynth> in = 0
+msynth> filter = 0
+msynth> filter = in + in[1] - filter[0] 
+msynth> in = square(50)
+msynth> filter
+msynth> in = 0
+msynth> square(50)
+msynth> 0
+msynth> filter
+msynth> in = square(50)
+msynth> square(50)
+msynth> filter
+msynth> 0
+msynth> filter
+msynth> in = 0
+msynth> reverb = 0
+msynth> reverb = filter + 0.5 * reverb[1000]
+msynth> reverb
+msynth> in = square(50)
+msynth> in = 0
+msynth> in = square(50)
+msynth> in = 0
+msynth> reverb = filter + 0.6 * reverb[1000]
+msynth> in = square(50)
+msynth> reverb = filter + 0.7 * reverb[1000]
+msynth> in = 0
+msynth> reverb = filter + 0.7 * reverb[1000]
+msynth> in = square(50)
+msynth> reverb = filter + 0.8 * reverb[1000]
+msynth> in = 0
+msynth> in = square(50)
+msynth> reverb = filter + 0.9 * reverb[1000]
+msynth> reverb = filter + reverb[1000]
+msynth> in = 0
+msynth> reverb = filter + 0.9 * reverb[1000]
+msynth> in = square(50)
+msynth> in = 0
+msynth> reverb = filter + 0.25 * (reverb[1000] + reverb[10000])
+msynth> in = square(50)
+msynth> in = 0
+msynth> reverb = filter + 0.45 * (reverb[1000] + reverb[10000])
+msynth> in = square(50)
+msynth> in = 0
+msynth> in = square(50) + sin(400)
+msynth> in = 0
+msynth> in = square(50) + sin(400)
+msynth> in = 0
+msynth> in = square(50) + sin(300)
+msynth> in = square(50) + sin(400)
+msynth> in = square(50) + sin(380)
+msynth> in = 0
+msynth> in = square(50) + sin(380)
+msynth> in = 0
+msynth> in = square(50) + sin(380)
+msynth> in = square(50) + sin(380)
+msynth> in = 0
+msynth> in = square(50) + sin(380)
+msynth> in = 0
+msynth> in = sin(380)
+msynth> in = 0
+msynth> in = saw(50)
+msynth> in = 0
+msynth> reverb = filter - 0.45 * (reverb[1000] + reverb[10000])
+msynth> in = sin(440)
+msynth> in = 0
+msynth> reverb
+msynth> in = sin(440)
+msynth> reverb = filter - 0.45 * (reverb[1000] + reverb[10000])
+msynth> reverb = filter + 0.45 * (reverb[1000] + reverb[10000])
+msynth> reverb = filter + 0.45 * (reverb[1000] - reverb[10000])
+msynth> in = 0
+msynth> reverb = filter + 0.45 * (reverb[1000] + reverb[10000])
+msynth> in = 1
+msynth> in = 0
+msynth> in = sin(50)
+msynth> in = 0
+msynth> sin(50)
+msynth> in = 0
+msynth> 0
+msynth> reverb
+msynth> hfreq = 50
+msynth> harmonium = 0.2 * (sin(hfreq) + sin(hfreq*2) + sin(hfreq*3) + sin(hfreq*4) + sin(hfreq*5))
+msynth> in = harmonium
+msynth> hfreq = 60
+msynth> in = 0
+msynth> hfreq = 60
+msynth> in = harmonium
+msynth> hfreq = 70
+msynth> hfreq = 80
+msynth> hfreq = 10
+msynth> hfreq = 80
+msynth> hfreq = 100
+msynth> hfreq = 90
+msynth> hfreq = 80
+msynth> hfreq = 100
+msynth> hfreq = 110
+msynth> hfreq = 120
+msynth> hfreq = 20
+msynth> hfreq = 200
+msynth> hfreq = 190
+msynth> hfreq = 200
+msynth> hfreq = 190
+msynth> hfreq = 180
+msynth> hfreq = 170
+msynth> hfreq = 160
+msynth> hfreq = 150
+msynth> hfreq = 140
+msynth> hfreq = 130
+msynth> hfreq = 120
+msynth> hfreq = 110
+msynth> hfreq = 100
+msynth> hfreq = 330
+msynth> hfreq = 400
+msynth> hfreq = 440
+msynth> hfreq = 200
+msynth> hfreq = 220
+msynth> harmonium
+msynth> hfreq = 440
+msynth> hfreq = 50
+msynth> hfreq = 50 + 100 * (saw(0.2) * 0.5 + 0.5)
+msynth> reverb
+msynth> harmonium = 0.2 * (square(hfreq) + square(hfreq*2) + square(hfreq*3) + square(hfreq*4) + sqaure(hfreq*5))
+No such function: 'sqaure'
+msynth> harmonium = 0.2 * (square(hfreq) + square(hfreq*2) + square(hfreq*3) + square(hfreq*4) + square(hfreq*5))
+msynth> harmonium = 0.2 * (saw(hfreq) + saw(hfreq*2) + saw(hfreq*3) + saw(hfreq*4) + saw(hfreq*5))
+msynth> harmonium = 0.2 * (triangle(hfreq) + triangle(hfreq*2) + triangle(hfreq*3) + triangle(hfreq*4) + triangle(hfreq*5))
+msynth> harmonium
+msynth> 
+synthread: shutting down
+synthread: processed 36696064 samples
+

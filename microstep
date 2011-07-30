@@ -1,0 +1,5 @@
+
+Use sound graphs in combination with quicksort to find evaluation order. (DONE)
+
+Don't forget to close var mem leak in assignment.
+

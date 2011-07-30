@@ -16,9 +16,6 @@
 #include "synth.h"
 #include "soundscript.h"
 
-/* msynth NULL signal */
-struct _msynth_modifier msynth_null_signal;
-
 static void *_msynth_thread_main(void *arg);
 
 /* pthread globals */
@@ -39,16 +36,19 @@ static snd_pcm_uframes_t
 /* microsynth settings */
 static volatile int shutdown = 0;
 static volatile float volume = 0.5f;
-static struct _msynth_modifier *root = &msynth_null_signal;
 
 /* microsynth stats */
 static int recover_resumes = 0, recover_xruns = 0;
 
+/* THIS FUNCTION MAKES USE OF SOUNDSCRIPT AND MUST THEREFORE BE CALLEED AFTER
+ * soundscript_init
+ */
 void msynth_init()
 {
     /* Setup null signal */
-    msynth_null_signal.type = MSMT_CONSTANT;
-    msynth_null_signal.data.constant = 0.0f;
+    ssv_set_var("right", soundscript_mark_use(ssb_number(0.)));
+    ssv_set_var("left", soundscript_mark_use(ssb_number(0.)));
+    ssv_regroup();
 
     /* Start synth thread */
     if (pthread_create(&synthread, NULL, _msynth_thread_main, NULL)) {
@@ -244,19 +244,30 @@ static void *_msynth_thread_main(void *arg)
     while (!shutdown) {
         /* Only during generation we need the synth tree to be static */
         pthread_mutex_lock(&mutex);
+        ssv_lock_vars();
         for (i = 0; i < period_size; i++) {
             /* Evaluate variables */
             ssv_eval(sc);
 
-            sample = (int)(32767.5 * synth_eval(root, sc) * volume);
+            sample = (int)(32767.5 * ssv_get_var_eval("left") * volume);
 
             /* Clip samples */
             if (sample > 32767) sample = 32767;
             if (sample < -32768) sample = -32768;
 
-            fb[i].left = fb[i].right = (short)sample;
+            fb[i].left = (short)sample;
+
+            sample = (int)(32767.5 * ssv_get_var_eval("right") * volume);
+
+            /* Clip samples */
+            if (sample > 32767) sample = 32767;
+            if (sample < -32768) sample = -32768;
+
+            fb[i].right = (short)sample;
+
             sc = sc_from_samples(sc.samplerate, sc.samples + 1);
         }
+        ssv_unlock_vars();
         pthread_mutex_unlock(&mutex);
 
         /* Send audio to sound card */
@@ -339,10 +350,9 @@ void synth_replace(msynth_modifier tree)
     /* prevent audio synthesis during replacement process */
     pthread_mutex_lock(&mutex);
 
-    if (root != &msynth_null_signal)
-        synth_free_recursive(root);
+    ssv_set_var("right", tree);
+    ssv_set_var("left", soundscript_mark_use(ssb_variable("right")));
 
-    root = tree;
     pthread_mutex_unlock(&mutex);
 
     return;
