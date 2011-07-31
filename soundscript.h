@@ -31,6 +31,9 @@ msynth_modifier ssb_func0(char *func_name);
 msynth_modifier ssb_func1(char *func_name, msynth_modifier in);
 msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
     msynth_modifier b);
+int ssb_is_delay(msynth_modifier mod);
+int ssb_get_delay(msynth_modifier mod);
+void ssb_set_delay(msynth_modifier mod, int delay);
 
 /* Soundscript variables */
 typedef struct _soundscript_var {

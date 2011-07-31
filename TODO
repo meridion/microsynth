@@ -10,6 +10,12 @@
 
 # 0.1.1 (locked)
 - variables (and infinite response)
+    - Variables (DONE)
+    - Sorting (DONE)
+    - Loop detection (DONE)
+    - Loop error
+    - Delaying
+    - IIR
 - Stereo (DONE)
 - low latency default setup (DONE)
 - audio setup CLI (DONE)
@@ -17,7 +23,7 @@
 - variable argument functions (DONE)
 - whitenoise function (DONE)
 - sample rewinding/delay (DONE)
-- README
+- README (DONE)
 
 ### Completed features ###
 

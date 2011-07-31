@@ -332,27 +332,14 @@ msynth_modifier ssb_div(msynth_modifier a, msynth_modifier b)
 /* Delay sample by X */
 msynth_modifier ssb_delay(msynth_modifier in, int delay)
 {
-    tf_delay_info di;
-    float *history;
-    int i;
-
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
 
     newmod->type = MSMT_NODE1;
     newmod->data.node.func = tf_delay;
     newmod->data.node.in = in;
-    newmod->storage = malloc(sizeof(struct _tf_delay_info) +
-        sizeof(float) * delay);
-    assert(newmod->storage);
-
-    di = (tf_delay_info)newmod->storage;
-    history = (float*)(di + 1);
-    di->delay = delay;
-    di->pos = 0;
-
-    for (i = 0; i < delay; i++)
-        history[i] = 0.0f;
+    newmod->storage = NULL;
+    ssb_set_delay(newmod, delay);
 
     /* Update GC */
     soundscript_mark_no_use(newmod);
@@ -454,6 +441,49 @@ msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
     return newmod;
 }
 
+/* Check if node is delay */
+int ssb_is_delay(msynth_modifier mod)
+{
+    return mod->type == MSMT_NODE1 && mod->data.node.func == tf_delay;
+}
+
+/* Get sample delay
+ *
+ * this function will assume mod is a delay, use with caution
+ */
+int ssb_get_delay(msynth_modifier mod)
+{
+    tf_delay_info delay = (tf_delay_info)mod->storage;
+
+    return delay->delay;
+}
+
+/* Change sample delay
+ *
+ * this function will assume mod is a valid delay, use with caution
+ */
+void ssb_set_delay(msynth_modifier mod, int delay)
+{
+    tf_delay_info di;
+    float *history;
+    int i;
+
+    free(mod->storage);
+    mod->storage = malloc(sizeof(struct _tf_delay_info) +
+        sizeof(float) * delay);
+    assert(mod->storage);
+
+    di = (tf_delay_info)mod->storage;
+    history = (float*)(di + 1);
+    di->delay = delay;
+    di->pos = 0;
+
+    for (i = 0; i < delay; i++)
+        history[i] = 0.0f;
+
+    return;
+}
+
 /* -------- Soundscript variables -------- */
 
 /* Set var <vname> to <mod> */
@@ -535,6 +565,8 @@ static int _compare_graphs(const void *g1, const void *g2)
 
 /* This function checks the usage of a mod2 by mod1
  *
+ * mod2 may be NULL to check purely check for cycles in the graph of mod1.
+ *
  * returns:
  *      SSV_USAGE_NONE:     mod1 does not depend on mod2.
  *      SSV_USAGE_ONEWAY:   mod1 uses mod2.
@@ -583,6 +615,35 @@ int ssv_makes_use_of(soundscript_var mod1, soundscript_var mod2)
         return SSV_USAGE_ONEWAY;
 
     return SSV_USAGE_NONE;
+}
+
+/* Check if assigning graph to var vname would cause a cycle
+ *
+ * A value of 1 will mean the assignment causes a cycle.
+ */
+int ssv_speculate_cycle(char *vname, msynth_modifier graph)
+{
+    soundscript_var var;
+    int usage;
+
+    var = g_hash_table_lookup(vartab, vname);
+    
+    /* The variable does not exist yet and can therefore not cause a cycle */
+    if (!var)
+        return 0;
+
+    /* Let's replace the variable with our speculation variable */
+    g_hash_table_insert(vartab, vname, NULL);
+    ssv_set_var(vname, graph);
+
+    /* Compute cycle */
+    usage = ssv_makes_use_of(ssv_get_var(vname), NULL);
+
+    /* Restore old variable */
+    free(ssv_get_var(vname));
+    g_hash_table_insert(vartab, vname, var);
+
+    return usage == SSV_USAGE_CIRCULAR;
 }
 
 /* Recursively mark variables used by variable */

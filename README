@@ -14,28 +14,31 @@ microsynth does not yet come with autotools, so to install, (if you ever wanted
 to do that ;-) you will have to copy the microsynth binary to "/usr/bin".
 
 A typical session will look like:
-$ ./microsynth 
-synthread: started
-synthread: Detected samplerate of 48000
-synthread: Selected buffersize of 2048
-synthread: Response delay is approximately 42.67 ms
-synthread: Selected period size of 1024
-synthread: Audio system configured.
-microsynth v0.1.1-devel
-msynth> in = 0
-msynth> filter = 0
-msynth> filter = in + in[1] - filter[0] 
-msynth> in = square(50)
-msynth> filter
-msynth> in = 0
-msynth> square(50)
-msynth> 0
+    $ ./microsynth 
+    synthread: started
+    synthread: Detected samplerate of 48000
+    synthread: Selected buffersize of 2048
+    synthread: Response delay is approximately 42.67 ms
+    synthread: Selected period size of 1024
+    synthread: Audio system configured.
+    microsynth v0.1.1-devel
+    msynth> in = 0
+    msynth> filter = 0
+    msynth> filter = in + in[1] - filter[0] 
+    msynth> in = square(50)
+    msynth> filter
+    msynth> in = 0
+    msynth> square(50)
+    msynth> 0
 
 An expression not assigned to a variable will be asigned to the synthesizer's
 output signal, and thus be audible.
 
 microsynth also has 2 special variables: "left" and "right" which can be used to
-output in stereo.
+output in stereo. Thus specifying no assignment will internally be handled as
+follows:
+    msynth> right = <expr>
+    msynth> left = right
 
 The complete set of current expression functions is:
     Oscillators:

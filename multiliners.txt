@@ -1,0 +1,6 @@
+
+stereo synth:
+lfo = 0.5 * sin(4) + 0.5
+left = sin(220) * lfo
+right = sin(220) * (1 - lfo)
+
