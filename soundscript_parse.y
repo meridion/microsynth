@@ -1,5 +1,11 @@
 /* Microsynth soundscript grammar */
 
+/* NOTE:
+ *
+ * In current config all code below will be executed while holding the synth
+ * lock. In other words, there will be absolutely no synthesis while parsing
+ * code.
+ */
 %{
 #include <glib.h>
 #include <math.h>
@@ -37,9 +43,27 @@ script:
     ;
 
 line: EOL
-    | IDENT '=' expr_add {
-            soundscript_mark_use($3);
-            ssv_set_var($1, $3);
+    | IDENT '=' {
+            /* In case of an expression like: x = .... x ..
+             * with x not yet defined, insert a dummy that allows the recursive
+             * definition. The dummy shall be the variable initialized to 0.
+             */
+            ssv_set_dummy($1);
+        }
+
+        /* Handle the rest of the assignment */
+        expr_add {
+
+            /* Verify there are no non-delayed signals present */
+            if (ssv_speculate_cycle($1, $4)) {
+                yyerror("Assignment would cause cycle in soundgraph,"
+                    " use delayed signal instead");
+                YYERROR;
+            }
+
+            /* Perform assignment */
+            soundscript_mark_use($4);
+            ssv_set_var($1, $4);
         }
     | expr_add EOL {
             /* GC should not delete this */

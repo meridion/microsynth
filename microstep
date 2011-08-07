@@ -1,5 +1,11 @@
 
 Use sound graphs in combination with quicksort to find evaluation order. (DONE)
 
-Don't forget to close var mem leak in assignment.
+Don't forget to close var mem leak in assignment. (DONE)
+
+Fix segfault: (DONE)
+msynth> x = 4
+msynth> y = x
+msynth> x = y
+then quit to segfault.
 

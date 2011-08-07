@@ -51,6 +51,10 @@ struct _msynth_frame {
 /* NULL signal */
 extern struct _msynth_modifier msynth_null_signal;
 
+/* Big Synth Lock */
+void synth_lock_graphs();
+void synth_unlock_graphs();
+
 /* synth interface */
 void msynth_init();
 void msynth_shutdown();

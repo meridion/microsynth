@@ -1,37 +1,73 @@
 
-- function definitions
-- Update Makefile
-- xargs functions
-- ADSR envelopes
-- filters
-- help command
-- special variables (samplerate, seconds, etc.)
-- Make GC functions more obvious (naming)
+# 0.1.4
+    - GTK/Qt GUI.
+    - Implement chiptune chip.
+    - Implement flanger.
+    - MIDI-support.
+
+# 0.1.3
+    - Update Makefile.
+    - filters.
+        - IIR High-pass.
+        - IIR Low-pass.
+        - IIR Band-pass.
+        - Butterworth.
+    - python scripting (construx objects, function generators)
+    - Full command line control of sound initialization. (optional stereo)
+    - synth library.
+    - inclusion of synth files
+    - Writing/Reading WAV files.
+    - Writing/Reading MP3 files.
+    - Sphinx documentation.
+    - Setup bug tracker.
+    - Setup test suite.
+    - Autotools build chain.
+
+# 0.1.2
+    - Make GC functions more obvious (naming) (easy)
+    - special variables (samplerate, seconds, etc.) (easy)
+    - function definitions (requires typing) (big)
+    - xargs functions (medium)
+    - ADSR envelopes (medium)
+    - help command (easy)
+    - Uitzoeken hoe strings in de variable hash table worden afgehandeld. (easy)
+    - Read 8-bit synth doc tracker related info. (big)
+    - Play around with schism tracker. (medium)
+    - implement a basic ncurses tracker. (big)
+    - Debug services
+        - Print expressions
+        - Print evaluation order
+        - Print recursion gates
+        - Print GC info
 
 # 0.1.1 (locked)
-- variables (and infinite response)
-    - Variables (DONE)
-    - Sorting (DONE)
-    - Loop detection (DONE)
-    - Loop error
-    - Delaying
+    - variables (DONE)
+        - Implement BSL (Big synth lock) (DONE)
+        - Variables (DONE)
     - IIR
-- Stereo (DONE)
-- low latency default setup (DONE)
-- audio setup CLI (DONE)
-- settings volume (DONE)
-- variable argument functions (DONE)
-- whitenoise function (DONE)
-- sample rewinding/delay (DONE)
-- README (DONE)
+        - Sorting (DONE)
+        - Loop detection (DONE)
+        - Loop error (DONE)
+        - Non-existent variable re-usage (delayed recursive definition) (DONE)
+        - Delayed loop permission
+            - Detection
+            - Delay modification
+    - Stereo (DONE)
+    - low latency default setup (DONE)
+    - audio setup CLI (DONE)
+    - settings volume (DONE)
+    - variable argument functions (DONE)
+    - whitenoise function (DONE)
+    - sample rewinding/delay (DONE)
+    - README (DONE)
 
 ### Completed features ###
 
 # Versionless
-- local storage (DONE, sort of)
+    - local storage (DONE, sort of)
 
 # 0.1
-- decoupled oscillators (DONE)
-- garbage collector (DONE)
-- FIX: sin40, hoi segfault oplossen (DONE)
+    - decoupled oscillators (DONE)
+    - garbage collector (DONE)
+    - FIX: sin40, hoi segfault oplossen (DONE)
 

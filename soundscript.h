@@ -56,7 +56,3 @@ void ssv_recursively_mark_vars(soundscript_var var);
 void ssv_regroup();
 void ssv_eval(struct sampleclock sc);
 
-/* Variable locking */
-void ssv_lock_vars();
-void ssv_unlock_vars();
-

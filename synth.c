@@ -40,6 +40,17 @@ static volatile float volume = 0.5f;
 /* microsynth stats */
 static int recover_resumes = 0, recover_xruns = 0;
 
+/* Big Synthesizer Lock */
+void synth_lock_graphs()
+{
+    pthread_mutex_lock(&mutex);
+}
+
+void synth_unlock_graphs()
+{
+    pthread_mutex_unlock(&mutex);
+}
+
 /* THIS FUNCTION MAKES USE OF SOUNDSCRIPT AND MUST THEREFORE BE CALLEED AFTER
  * soundscript_init
  */
@@ -243,8 +254,8 @@ static void *_msynth_thread_main(void *arg)
     /* -------------- Main loop --------------- */
     while (!shutdown) {
         /* Only during generation we need the synth tree to be static */
-        pthread_mutex_lock(&mutex);
-        ssv_lock_vars();
+        synth_lock_graphs();
+
         for (i = 0; i < period_size; i++) {
             /* Evaluate variables */
             ssv_eval(sc);
@@ -267,8 +278,8 @@ static void *_msynth_thread_main(void *arg)
 
             sc = sc_from_samples(sc.samplerate, sc.samples + 1);
         }
-        ssv_unlock_vars();
-        pthread_mutex_unlock(&mutex);
+
+        synth_unlock_graphs();
 
         /* Send audio to sound card */
         processed = 0;
@@ -344,17 +355,15 @@ int synth_recover(int err)
     return err;
 }
 
-/* Replace audio flow tree */
+/* Replace audio flow tree
+ *
+ * NOTE: you should not call this function
+ *       while not holding the synth lock.
+ */
 void synth_replace(msynth_modifier tree)
 {
-    /* prevent audio synthesis during replacement process */
-    pthread_mutex_lock(&mutex);
-
     ssv_set_var("right", tree);
     ssv_set_var("left", soundscript_mark_use(ssb_variable("right")));
-
-    pthread_mutex_unlock(&mutex);
-
     return;
 }
 

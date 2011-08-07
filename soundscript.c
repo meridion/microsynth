@@ -14,9 +14,6 @@
 /* Local function definitions */
 void _ssv_recursively_mark_graphs(msynth_modifier mod);
 
-/* Lock variable assignments when performing synthesis */
-static pthread_mutex_t synth_lock = PTHREAD_MUTEX_INITIALIZER;
-
 /* Cast override functions (work around for warnings) */
 #define __DEF_FORCE_CAST(INTYPE, OUTTYPE, NAME) \
 static OUTTYPE __force_cast_ ## NAME(INTYPE pin) \
@@ -68,6 +65,11 @@ void soundscript_parse(char *line)
     mod_str[len + 1] = '\0';
     mod_str[len + 2] = '\0';
 
+    /* Ensure no synthesis will take place while we modify
+     * the sound graphs
+     */
+    synth_lock_graphs();
+
     /* Parse string */
     x = yy_scan_buffer(mod_str, len + 3);
     yyparse();
@@ -77,8 +79,11 @@ void soundscript_parse(char *line)
     soundscript_run_gc();
     free(mod_str);
 
-    /* Handle variables */
+    /* Update variable evaluation order */
     ssv_regroup();
+
+    /* Finally unlock synthesizer */
+    synth_unlock_graphs();
 
     return;
 }
@@ -491,9 +496,6 @@ void ssv_set_var(char *vname, msynth_modifier mod)
 {
     soundscript_var new; 
 
-    /* Protect against use while performings synthesis */
-    ssv_lock_vars();
-
     new = g_hash_table_lookup(vartab, vname);
 
     /* Replace existing var or allocate if necessary */
@@ -508,7 +510,6 @@ void ssv_set_var(char *vname, msynth_modifier mod)
     new->vargraph = mod;
     new->last_eval = 0.;
 
-    ssv_unlock_vars();
     return;
 }
 
@@ -525,6 +526,25 @@ soundscript_var ssv_get_var(char *vname)
 {
     soundscript_var v = g_hash_table_lookup(vartab, vname);
     return v;
+}
+
+/* Setup dummy variable
+ *
+ * This function is used to support recursive definitions.
+ *
+ * XXX: Changing this function to something else is complex
+ *      since there is no reliable way to handle failed assignments
+ *      and garbage collect useless dummies. Therefore, every
+ *      variable assignment to a previously non-existent variable
+ *      will currently result in that variable being initialized with 0
+ *      when the actual assignment fails.
+ */
+void ssv_set_dummy(char *vname)
+{
+    if (g_hash_table_lookup(vartab, vname) == NULL)
+        ssv_set_var(vname, soundscript_mark_use(ssb_number(0.f)));
+
+    return;
 }
 
 /* Compare two graphs' variable usage
@@ -629,20 +649,25 @@ int ssv_speculate_cycle(char *vname, msynth_modifier graph)
     var = g_hash_table_lookup(vartab, vname);
     
     /* The variable does not exist yet and can therefore not cause a cycle */
-    if (!var)
+    if (!var) {
+        printf("spec: var does not exists, no cycle\n");
         return 0;
+    }
 
-    /* Let's replace the variable with our speculation variable */
+    /* Let's replace the vaiable with our speculation variable */
     g_hash_table_insert(vartab, vname, NULL);
     ssv_set_var(vname, graph);
 
     /* Compute cycle */
     usage = ssv_makes_use_of(ssv_get_var(vname), NULL);
+    printf("spec: usage %i\n", usage);
 
     /* Restore old variable */
     free(ssv_get_var(vname));
     g_hash_table_insert(vartab, vname, var);
 
+    if (usage == SSV_USAGE_CIRCULAR)
+        printf("spec: Cycle detected returning 1.\n");
     return usage == SSV_USAGE_CIRCULAR;
 }
 
@@ -729,17 +754,5 @@ void ssv_eval(struct sampleclock sc)
     }
 
     return;
-}
-
-/* Lock variable assignments */
-void ssv_lock_vars()
-{
-    pthread_mutex_lock(&synth_lock);
-}
-
-/* Unlock variable assignments */
-void ssv_unlock_vars()
-{
-    pthread_mutex_unlock(&synth_lock);
 }
 
