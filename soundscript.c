@@ -619,7 +619,7 @@ int ssv_makes_use_of(soundscript_var mod1, soundscript_var mod2)
         }
 
         /* Unmark variable */
-        v->mark = 0;
+        v->mark &= ~0x3;
 
         /* grab next item in iter */
         iter = g_list_next(iter);
@@ -671,7 +671,13 @@ int ssv_speculate_cycle(char *vname, msynth_modifier graph)
     return usage == SSV_USAGE_CIRCULAR;
 }
 
-/* Recursively mark variables used by variable */
+/* Recursively mark variables used by variable
+ *
+ * NOTE: This function does not 0x2 mark variables, since doing so
+ *       would cause the function to be useless for cycle detection.
+ * NOTE2:
+ *      This function should only modify the first 2 bits of var->mark;
+ */
 void ssv_recursively_mark_vars(soundscript_var var)
 {
     /* This variable was processed already */
@@ -695,7 +701,7 @@ void _ssv_recursively_mark_graphs(msynth_modifier mod)
             var = ssv_get_var(mod->data.varname);
             assert(var);
 
-            /* This is the actual usage mark */
+            /* This is the actual usage mark used for cycle detection */
             var->mark |= 0x2;
             ssv_recursively_mark_vars(var);
             break;
@@ -713,6 +719,117 @@ void _ssv_recursively_mark_graphs(msynth_modifier mod)
     }
 
     return;
+}
+
+/* Mark all immediately reached vars */
+void _ssv_recursively_mark_immediate_graphs(msynth_modifier mod)
+{
+    soundscript_var var;
+
+    switch(mod->type) {
+        case MSMT_VARIABLE:
+            var = ssv_get_var(mod->data.varname);
+            assert(var);
+
+            /* This is the actual usage mark used for cycle detection */
+            var->mark |= 0x4;
+            break;
+
+        case MSMT_NODE1:
+            _ssv_recursively_mark_graphs(mod->data.node.in);
+            break;
+
+        case MSMT_NODE2:
+            _ssv_recursively_mark_graphs(mod->data.node2.a);
+            _ssv_recursively_mark_graphs(mod->data.node2.b);
+            break;
+
+        default:;
+    }
+
+    return;
+}
+
+/* Recursively find all variables in a cycle
+ *
+ * XXX: There are probably more efficient algorithms around to implement this,
+ *      it might be worth investigating various cycle detection algorithms.
+ *
+ * This function first marks all variables reachable from a given variable
+ * afterwards eliminating all variables not looping back to this variable.
+ *
+ * This function returns nothing, but leaves the variables mark members intact
+ * after completion.
+ *
+ * NOTE: This function assumes there is an actual cycle.
+ *
+ * NOTE: This function requires all mark members to be 0 to return the correct
+ *       results. Failure to do so will lead to incorrect results, although will
+ *       not crash the program.
+ */
+void ssv_mark_cycle_vars(soundscript_var cvar)
+{
+    GList *list, *iter;
+    soundscript_var v;
+
+    /* First begin with marking all vars reachable from 'var' */
+    _ssv_recursively_mark_immediate_graphs(cvar->vargraph);
+
+    /* Now check all vars partaking in the cycle */
+    iter = list = g_hash_table_get_values(vartab);
+
+    /* Convert all touched marks to persistent test marks. */
+    while (iter) {
+        v = (soundscript_var)g_list_nth_data(iter, 0);
+
+        /* Only check required vars */
+        if (v->mark & 0x4) {
+            /* Mark v to check if it links back to cvar */
+            ssv_recursively_mark_vars(v);
+
+            /* Did we reach cvar */
+            if (cvar->mark & 0x2) {
+                /* Set cycle member flag */
+                v->mark |= 0x8;
+            }
+
+            ssv_clear_marks(0x3);
+        }
+
+        /* grab next item in iter */
+        iter = g_list_next(iter);
+    }
+
+    /* Free iterated list */
+    g_list_free(list);
+
+    return;
+}
+
+/* Clear any active variable markings
+ *
+ * clear: should be a mask of bits to clear (0x1 means clear bit 1)
+ */
+void ssv_clear_marks(unsigned int clear)
+{
+    GList *list, *iter;
+    soundscript_var v;
+
+    iter = list = g_hash_table_get_values(vartab);
+
+    /* Unmark all variables */
+    while (iter) {
+        v = (soundscript_var)g_list_nth_data(iter, 0);
+
+        /* Unmark variable */
+        v->mark &= ~clear;
+
+        /* grab next item in iter */
+        iter = g_list_next(iter);
+    }
+
+    /* Free iterated list */
+    g_list_free(list);
 }
 
 /* Regroup variables */

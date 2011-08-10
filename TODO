@@ -51,6 +51,9 @@
         - Non-existent variable re-usage (delayed recursive definition) (DONE)
         - Delayed loop permission
             - Detection
+                - Detect vars parttaking in cycle (DONE)
+                    - test it..
+                - Detect all delays
             - Delay modification
     - Stereo (DONE)
     - low latency default setup (DONE)
