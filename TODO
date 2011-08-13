@@ -49,12 +49,13 @@
         - Loop detection (DONE)
         - Loop error (DONE)
         - Non-existent variable re-usage (delayed recursive definition) (DONE)
-        - Delayed loop permission
-            - Detection
-                - Detect vars parttaking in cycle (DONE)
-                    - test it..
-                - Detect all delays
-            - Delay modification
+        - Recursive vars
+            - Recursive variable type (DONE)
+            - Recursive assignment operator (DONE)
+            - Recursion validation check (DONE)
+            - Recursion-aware cycle check
+            - Recursion-aware delays
+            - Recursive variable evaluation (DONE)
     - Stereo (DONE)
     - low latency default setup (DONE)
     - audio setup CLI (DONE)

@@ -38,7 +38,10 @@ void ssb_set_delay(msynth_modifier mod, int delay);
 /* Soundscript variables */
 typedef struct _soundscript_var {
     msynth_modifier vargraph;
-    float last_eval;
+    float
+        last_eval,
+        recursive_next;
+    int recursive;
     int mark;
 } *soundscript_var;
 
@@ -48,7 +51,9 @@ typedef struct _soundscript_var {
 #define SSV_USAGE_CIRCULAR 2
 
 /* Soundscript variables interface */
+soundscript_var _ssv_alloc_var(void);
 void ssv_set_var(char *vname, msynth_modifier mod);
+void ssv_set_var_recursive(char *vname, msynth_modifier mod);
 float ssv_get_var_eval(char *vname);
 soundscript_var ssv_get_var(char *vname);
 int ssv_makes_use_of(soundscript_var var1, soundscript_var var2);

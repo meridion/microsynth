@@ -17,6 +17,10 @@
 #include "transform.h"
 
 void yyerror(const char *s);
+static void put_recursion_error() {
+    yyerror("error: All recursive variables must be referenced with a delay")
+    yyerror("       of at least 1 sample, to break infinite feedback.");
+}
 
 %}
 
@@ -43,8 +47,9 @@ script:
     ;
 
 line: EOL
-    | IDENT '=' {
-            /* In case of an expression like: x = .... x ..
+    /* Normal assignment */
+    | IDENT ':' {
+            /* In case of an expression like: x := .... x ..
              * with x not yet defined, insert a dummy that allows the recursive
              * definition. The dummy shall be the variable initialized to 0.
              */
@@ -54,10 +59,16 @@ line: EOL
         /* Handle the rest of the assignment */
         expr_add {
 
-            /* Verify there are no non-delayed signals present */
+            /* Validate recursion */
+            if (ssv_validate_recursion($4)) {
+                put_recursion_error();
+                YYERROR;
+            }
+
+            /* Verify there is no recursion in normal variables */
             if (ssv_speculate_cycle($1, $4)) {
                 yyerror("Assignment would cause cycle in soundgraph,"
-                    " use delayed signal instead");
+                    " use recursive variables instead");
                 YYERROR;
             }
 
@@ -65,7 +76,36 @@ line: EOL
             soundscript_mark_use($4);
             ssv_set_var($1, $4);
         }
+
+    /* Recursive assignment */
+    | IDENT '=' {
+            /* In case of an expression like: x := .... x ..
+             * with x not yet defined, insert a dummy that allows the recursive
+             * definition. The dummy shall be the variable initialized to 0.
+             */
+            ssv_set_dummy($1);
+        }
+
+        /* Handle the rest of the assignment */
+        expr_add {
+
+            /* Validate recursion */
+            if (ssv_validate_recursion($4)) {
+                put_recursion_error();
+                YYERROR;
+            }
+
+            /* Perform assignment */
+            soundscript_mark_use($4);
+            ssv_set_var_recursive($1, $4);
+        }
     | expr_add EOL {
+            /* Validate recursion */
+            if (ssv_validate_recursion($1)) {
+                put_recursion_error();
+                YYERROR;
+            }
+
             /* GC should not delete this */
             soundscript_mark_use($1);
 

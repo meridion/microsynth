@@ -48,6 +48,7 @@ static GHashTable *vartab; /* Variable table */
 
 /* Variable evaluation array */
 static soundscript_var *eval_list = NULL;
+static int eval_recursive = 0;
 
 /* Parse a command line */
 void soundscript_parse(char *line)
@@ -491,6 +492,21 @@ void ssb_set_delay(msynth_modifier mod, int delay)
 
 /* -------- Soundscript variables -------- */
 
+/* Allocate variable structure */
+soundscript_var _ssv_alloc_var(void)
+{
+    soundscript_var new; 
+    new = malloc(sizeof(struct _soundscript_var));
+    assert(new);
+
+    new->vargraph = NULL;
+    new->recursive = 0;
+    new->last_eval = 0.;
+    new->next_recursive = 0.;
+
+    return new;
+}
+
 /* Set var <vname> to <mod> */
 void ssv_set_var(char *vname, msynth_modifier mod)
 {
@@ -502,13 +518,32 @@ void ssv_set_var(char *vname, msynth_modifier mod)
     if (new) {
         synth_free_recursive(new->vargraph);
     } else {
-        new = malloc(sizeof(struct _soundscript_var));
-        assert(new);
+        new = _ssv_alloc_var();
         g_hash_table_insert(vartab, vname, new);
     }
 
     new->vargraph = mod;
-    new->last_eval = 0.;
+
+    return;
+}
+
+/* Set var <vname> to recursive <mod> */
+void ssv_set_var_recursive(char *vname, msynth_modifier mod)
+{
+    soundscript_var new; 
+
+    new = g_hash_table_lookup(vartab, vname);
+
+    /* Replace existing var or allocate if necessary */
+    if (new) {
+        synth_free_recursive(new->vargraph);
+    } else {
+        new = _ssv_alloc_var();
+        g_hash_table_insert(vartab, vname, new);
+    }
+
+    new->vargraph = mod;
+    new->recursive = 1;
 
     return;
 }
@@ -669,6 +704,47 @@ int ssv_speculate_cycle(char *vname, msynth_modifier graph)
     if (usage == SSV_USAGE_CIRCULAR)
         printf("spec: Cycle detected returning 1.\n");
     return usage == SSV_USAGE_CIRCULAR;
+}
+
+/* Verify a soundgraph is recursive valid */
+int ssv_validate_recursion(msynth_modifier graph)
+{
+    return _ssv_validate_recursion(graph, 0)
+}
+
+/* Recursively compute valid recursion variable references
+ *
+ * returns 0 on success, -1 on failure
+ */
+int _ssv_validate_recursion(msynth_modifier mod, int can_reference)
+{
+    soundscript_var var;
+
+    switch(mod->type) {
+        case MSMT_VARIABLE:
+            var = ssv_get_var(mod->data.varname);
+            assert(var);
+
+            if (var->is_recursive)
+                return can_reference - 1;
+            break;
+
+        case MSMT_NODE1:
+            /* This is the only node that can be a delay,
+             * check for a delay, and pass-on
+             */
+            return _ssv_validate_recursion(mod->data.node.in,
+                ssb_is_delay(mod));
+
+        case MSMT_NODE2:
+            if(_ssv_validate_recursion(mod->data.node2.a, 0))
+                return -1;
+            return _ssv_validate_recursion(mod->data.node2.b, 0);
+
+        default:;
+    }
+
+    return;
 }
 
 /* Recursively mark variables used by variable
@@ -835,26 +911,39 @@ void ssv_clear_marks(unsigned int clear)
 /* Regroup variables */
 void ssv_regroup()
 {
-    int i = 0;
+    int i = 0, j;
     GList *iter, *list;
+    soundscript_var v;
 
     free(eval_list);
-    eval_list = calloc(g_hash_table_size(vartab),sizeof(soundscript_var));
+
+    /* j will be used to place all recursive variables at the end of the list */
+    j = g_hash_table_size(vartab);
+    eval_list = calloc(j, sizeof(soundscript_var));
 
     iter = list = g_hash_table_get_values(vartab);
 
     /* Fetch all variables and store them in evaluation array */
     while (iter) {
+        v = (soundscript_var)g_list_nth_data(iter, 0);
+
         /* Store var in array */
-        eval_list[i++] = (soundscript_var)g_list_nth_data(iter, 0);
+        if (v->recursive)
+            eval_list[--j] = v;
+        else
+            eval_list[i++] = v;
 
         /* grab next item in iter */
         iter = g_list_next(iter);
     }
+
     g_list_free(list);
 
+    /* Store the first recursive entry in a global var */
+    eval_recursive = j;
+
     /* Now sort array using quicksort based on dependencies */
-    qsort(eval_list, g_hash_table_size(vartab),
+    qsort(eval_list, j - 1,
         sizeof(soundscript_var), _compare_graphs);
 
     return;
@@ -863,12 +952,25 @@ void ssv_regroup()
 /* Evaluate variables */
 void ssv_eval(struct sampleclock sc)
 {
-    int i = 0, size = g_hash_table_size(vartab);
+    int
+        i = 0,
+        size = g_hash_table_size(vartab);
 
-    for (; i < size; i++) {
+    /* Loop over normal variables */
+    for (; i < eval_recursive; i++) {
         soundscript_var v = eval_list[i];
         v->last_eval = synth_eval(v->vargraph, sc);
     }
+
+    /* Loop over recursive variables */
+    for (; i < size; i++) {
+        soundscript_var v = eval_list[i];
+        v->recursive_next = synth_eval(v->vargraph, sc);
+    }
+
+    /* Store recursive new entries */
+    for (i = eval_recursive; i < size; i++)
+        v->last_eval = v->recursive_next;
 
     return;
 }

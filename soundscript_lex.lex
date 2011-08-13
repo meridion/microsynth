@@ -46,6 +46,7 @@ volume          return VOLUME;
 \*                  return '*';
 \/                  return '/';
 =                   return '=';
+:=                  return ':';
 
     /* Parens */
 \(                  return '(';
