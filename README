@@ -1,4 +1,6 @@
 
+microsynth - v0.1.1
+
 Microsynth is a minimal command-line driven synthesizer.
 
 It currently supports variables, delayed signals, infinite impuls response and
@@ -160,4 +162,3 @@ Current unknown bugs:
     but not now.
 
 Have fun making idiotic sounds. :-)
-

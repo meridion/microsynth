@@ -1,6 +1,6 @@
 /* Global synthesizer configuration */
 
-#define MSYNTH_VERSION "v0.1.1-devel"
+#define MSYNTH_VERSION "v0.1.1"
 
 extern struct _msynth_config {
     int exit_code;
