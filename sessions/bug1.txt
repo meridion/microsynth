@@ -1,0 +1,24 @@
+$ ./microsynth 
+synthread: started
+synthread: Detected samplerate of 48000
+synthread: Selected buffersize of 2048
+synthread: Response delay is approximately 42.67 ms
+synthread: Selected period size of 1024
+synthread: Audio system configured.
+microsynth v0.1.1-devel
+msynth> x = x
+error: All recursive variables must be referenced with a delay
+       of at least 1 sample, to break infinite feedback.
+msynth> x := z
+No such variable: 'z'
+msynth> x := x
+spec: usage 0
+msynth> x:= x
+spec: usage 2
+spec: Cycle detected returning 1.
+Assignment would cause cycle in soundgraph, use recursive variables instead
+
+----------------
+
+x := x should never yield spec: usage 0
+

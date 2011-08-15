@@ -1,4 +1,9 @@
 
+Make sure non-recursively assigning a previously recursive variable
+    to itself, yields the correct error.
+
+Make sure right/left variables are evaluated correctly in new setup.
+
 Use sound graphs in combination with quicksort to find evaluation order. (DONE)
 
 Don't forget to close var mem leak in assignment. (DONE)

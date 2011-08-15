@@ -22,12 +22,11 @@ A typical session will look like:
     synthread: Selected period size of 1024
     synthread: Audio system configured.
     microsynth v0.1.1-devel
-    msynth> in = 0
-    msynth> filter = 0
+    msynth> in := 0
     msynth> filter = in + in[1] - filter[0] 
-    msynth> in = square(50)
-    msynth> filter
-    msynth> in = 0
+    msynth> in := square(50)
+    msynth> filter[1]
+    msynth> in := 0
     msynth> square(50)
     msynth> 0
 
@@ -37,8 +36,48 @@ output signal, and thus be audible.
 microsynth also has 2 special variables: "left" and "right" which can be used to
 output in stereo. Thus specifying no assignment will internally be handled as
 follows:
-    msynth> right = <expr>
-    msynth> left = right
+    msynth> right := <expr>
+    msynth> left := right
+
+There are 2 assignment operators
+    x := 0
+
+    and
+
+    x = 0
+
+    The difference between these two operators is, the first
+    'x := 0' directly assigns to x the value 0, this means
+    the variable is non-recursive.
+    The other however, 'x = 0' makes x a recursive variable.
+
+    The effect can be explained quite easily, whenever
+    you assign something the normal way the following
+    is not possible:
+        x := x[1] * 0.1 + sin(440) * 0.5 + sin(440)[1] * 0.5
+
+    This would cause a problem with the evaluation system,
+    mainly infinite loop. Therefore microsynth supports
+    recursive variables:
+        x = x[1] * 0.1 + sin(440) * 0.5 + sin(440)[1] * 0.5
+
+    Recursive variables have the restriction that they must always
+    be referenced with a delay of 1 sample, thus:
+        x = x
+
+    is invalid.
+        x = x[1]
+
+    however is perfectly fine.
+
+Expressions support the following syntaxis:
+    <expr> + <expr> - Add
+    <expr> - <expr> - subtract
+    <expr> / <expr> - divide
+    <expr> * <expr> - multiply
+    (<expr>)        - nest
+    and finally
+    <expr>[<integer>] - delay <expr> by <integer> samples.
 
 The complete set of current expression functions is:
     Oscillators:
@@ -80,4 +119,45 @@ Finally microsynth has 2 special commands:
 
     quit:
         Farely simple, quit the synthesizer.
+        Although ^D and ^C ought to work too.
+
+Current quirks:
+    - The following is valid:
+        x := 0
+        y := x
+        x = 0
+
+        Normally when recursive, y requires x to be delayed by 1
+        when assigning. When re-assigning x recursively all
+        references to x are simply auto-delayed by 1.
+
+    - The following is obviously valid but introduces an effect:
+        x = 0
+        y := x[1]
+        x := 0
+
+        Since x was recursive when assigning to y, re-assigning x to be
+        non-recursive decreases all delays to x by 1. Simply said,
+        recursive variables are always one sample slower than non-recursive
+        variables, in order to keep the evaluation system from falling
+        into an infinite loop.
+
+    - x = <invalid statement> or x := <invalid statement> yields a defined
+      variable.
+        Currently microsynth uses dummies internally to allow recursive
+        assignment. As a side effect whenever x was undefined prior to
+        being assigned a dummy will be inserted. If the assignment later fails,
+        due to cycles or invalid syntax the dummy remains. The dummy
+        variable will be a non-recursive value of 0. The dummies are simply
+        not garbage collected yet.
+
+Current know bugs:
+    None.
+
+Current unknown bugs:
+    None.
+    Probably there are a bunch,
+    but not now.
+
+Have fun making idiotic sounds. :-)
 

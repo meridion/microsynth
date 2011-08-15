@@ -51,13 +51,16 @@ typedef struct _soundscript_var {
 #define SSV_USAGE_CIRCULAR 2
 
 /* Soundscript variables interface */
-soundscript_var _ssv_alloc_var(void);
 void ssv_set_var(char *vname, msynth_modifier mod);
 void ssv_set_var_recursive(char *vname, msynth_modifier mod);
 float ssv_get_var_eval(char *vname);
+void ssv_set_dummy(char *vname);
 soundscript_var ssv_get_var(char *vname);
 int ssv_makes_use_of(soundscript_var var1, soundscript_var var2);
+int ssv_speculate_cycle(char *vname, msynth_modifier graph);
+int ssv_validate_recursion(msynth_modifier graph, char *vname);
 void ssv_recursively_mark_vars(soundscript_var var);
-void ssv_regroup();
+void ssv_clear_marks(unsigned int clear);
+void ssv_regroup(void);
 void ssv_eval(struct sampleclock sc);
 

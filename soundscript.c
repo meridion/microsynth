@@ -1,7 +1,9 @@
 /* microsynth - Sound scripting */
+#include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
 #include <assert.h>
 #include <glib.h>
-#include <pthread.h>
 
 #include "sampleclock.h"
 #include "synth.h"
@@ -12,7 +14,9 @@
 #include "soundscript.h"
 
 /* Local function definitions */
-void _ssv_recursively_mark_graphs(msynth_modifier mod);
+static soundscript_var _ssv_alloc_var(void);
+static void _ssv_recursively_mark_graphs(msynth_modifier mod);
+static int _ssv_validate_recursion(msynth_modifier mod, int can_reference);
 
 /* Cast override functions (work around for warnings) */
 #define __DEF_FORCE_CAST(INTYPE, OUTTYPE, NAME) \
@@ -493,7 +497,7 @@ void ssb_set_delay(msynth_modifier mod, int delay)
 /* -------- Soundscript variables -------- */
 
 /* Allocate variable structure */
-soundscript_var _ssv_alloc_var(void)
+static soundscript_var _ssv_alloc_var(void)
 {
     soundscript_var new; 
     new = malloc(sizeof(struct _soundscript_var));
@@ -502,7 +506,8 @@ soundscript_var _ssv_alloc_var(void)
     new->vargraph = NULL;
     new->recursive = 0;
     new->last_eval = 0.;
-    new->next_recursive = 0.;
+    new->recursive_next = 0.;
+    new->mark = 0;
 
     return new;
 }
@@ -523,6 +528,7 @@ void ssv_set_var(char *vname, msynth_modifier mod)
     }
 
     new->vargraph = mod;
+    new->recursive = 0;
 
     return;
 }
@@ -601,7 +607,7 @@ static int _compare_graphs(const void *g1, const void *g2)
 
     r = ssv_makes_use_of(mod1, mod2);
     if (r) {
-        /* Circular/Mutual use */
+        /* Circular/Mutual use, order cannot be established */
         if (r == SSV_USAGE_CIRCULAR)
             return 0;
 
@@ -614,7 +620,7 @@ static int _compare_graphs(const void *g1, const void *g2)
     if (ssv_makes_use_of(mod2, mod1) == SSV_USAGE_ONEWAY)
         return -1;
 
-    /* No usage at all */
+    /* No usage at all, order does not matter */
     return 0;
 }
 
@@ -675,6 +681,9 @@ int ssv_makes_use_of(soundscript_var mod1, soundscript_var mod2)
 /* Check if assigning graph to var vname would cause a cycle
  *
  * A value of 1 will mean the assignment causes a cycle.
+ * NOTE: Since cycles cannot occur with recursive variables
+ *       this function assumes the vname is about to be
+ *       non-recursively assigned.
  */
 int ssv_speculate_cycle(char *vname, msynth_modifier graph)
 {
@@ -689,34 +698,61 @@ int ssv_speculate_cycle(char *vname, msynth_modifier graph)
         return 0;
     }
 
-    /* Let's replace the vaiable with our speculation variable */
+    /* Let's replace the current variable with our speculation variable
+     * NOTE: Assign non recursively, as doing otherwise would defeat the purpose
+     * of this function, recursive variables cannot form cycles.
+     */
     g_hash_table_insert(vartab, vname, NULL);
     ssv_set_var(vname, graph);
 
     /* Compute cycle */
     usage = ssv_makes_use_of(ssv_get_var(vname), NULL);
+    /* XXX */
     printf("spec: usage %i\n", usage);
 
     /* Restore old variable */
     free(ssv_get_var(vname));
     g_hash_table_insert(vartab, vname, var);
 
+    /* XXX */
     if (usage == SSV_USAGE_CIRCULAR)
         printf("spec: Cycle detected returning 1.\n");
     return usage == SSV_USAGE_CIRCULAR;
 }
 
-/* Verify a soundgraph is recursive valid */
-int ssv_validate_recursion(msynth_modifier graph)
+/* Verify a soundgraph is recursive valid
+ *
+ * If we're validating a recursive assigment vname contains
+ * the name of this newly recursive variable. In this case
+ * we temporarely modify it to complete the validation.
+ */
+int ssv_validate_recursion(msynth_modifier graph, char *vname)
 {
-    return _ssv_validate_recursion(graph, 0)
+    int was_recursive, validity;
+    soundscript_var v = NULL;
+
+    /* Lookup and modify */
+    if (vname) {
+        v = ssv_get_var(vname);
+        was_recursive = v->recursive;
+        v->recursive = 1;
+    }
+
+    /* Perform actual validation */
+    validity =  _ssv_validate_recursion(graph, 0);
+
+    /* Restore any modification */
+    if (vname)
+        v->recursive = was_recursive;
+
+    return validity;
 }
 
 /* Recursively compute valid recursion variable references
  *
  * returns 0 on success, -1 on failure
  */
-int _ssv_validate_recursion(msynth_modifier mod, int can_reference)
+static int _ssv_validate_recursion(msynth_modifier mod, int can_reference)
 {
     soundscript_var var;
 
@@ -725,7 +761,7 @@ int _ssv_validate_recursion(msynth_modifier mod, int can_reference)
             var = ssv_get_var(mod->data.varname);
             assert(var);
 
-            if (var->is_recursive)
+            if (var->recursive)
                 return can_reference - 1;
             break;
 
@@ -744,7 +780,7 @@ int _ssv_validate_recursion(msynth_modifier mod, int can_reference)
         default:;
     }
 
-    return;
+    return 0;
 }
 
 /* Recursively mark variables used by variable
@@ -768,7 +804,7 @@ void ssv_recursively_mark_vars(soundscript_var var)
 }
 
 /* Recursively mark variables used in sound graph */
-void _ssv_recursively_mark_graphs(msynth_modifier mod)
+static void _ssv_recursively_mark_graphs(msynth_modifier mod)
 {
     soundscript_var var;
 
@@ -777,9 +813,15 @@ void _ssv_recursively_mark_graphs(msynth_modifier mod)
             var = ssv_get_var(mod->data.varname);
             assert(var);
 
-            /* This is the actual usage mark used for cycle detection */
-            var->mark |= 0x2;
-            ssv_recursively_mark_vars(var);
+            /* Recursive variables are special, they can never cause
+             * infinite evaluation, and are therefore ignored in cycle
+             * checking. All their references are delayed.
+             */
+            if (!var->recursive) {
+                /* This is the actual usage mark used for cycle detection */
+                var->mark |= 0x2;
+                ssv_recursively_mark_vars(var);
+            }
             break;
 
         case MSMT_NODE1:
@@ -909,7 +951,7 @@ void ssv_clear_marks(unsigned int clear)
 }
 
 /* Regroup variables */
-void ssv_regroup()
+void ssv_regroup(void)
 {
     int i = 0, j;
     GList *iter, *list;
@@ -952,19 +994,20 @@ void ssv_regroup()
 /* Evaluate variables */
 void ssv_eval(struct sampleclock sc)
 {
+    soundscript_var v = NULL;
     int
         i = 0,
         size = g_hash_table_size(vartab);
 
     /* Loop over normal variables */
     for (; i < eval_recursive; i++) {
-        soundscript_var v = eval_list[i];
+        v = eval_list[i];
         v->last_eval = synth_eval(v->vargraph, sc);
     }
 
     /* Loop over recursive variables */
     for (; i < size; i++) {
-        soundscript_var v = eval_list[i];
+        v = eval_list[i];
         v->recursive_next = synth_eval(v->vargraph, sc);
     }
 

@@ -40,22 +40,31 @@
         - Print recursion gates
         - Print GC info
 
-# 0.1.1 (locked)
+### Completed features ###
+
+# Versionless
+    - local storage (DONE, sort of)
+
+# 0.1.1 (locked) (DONE!)
     - variables (DONE)
         - Implement BSL (Big synth lock) (DONE)
         - Variables (DONE)
-    - IIR
+    - IIR (DONE)
         - Sorting (DONE)
         - Loop detection (DONE)
         - Loop error (DONE)
         - Non-existent variable re-usage (delayed recursive definition) (DONE)
-        - Recursive vars
+        - Recursive vars (DONE)
             - Recursive variable type (DONE)
             - Recursive assignment operator (DONE)
             - Recursion validation check (DONE)
-            - Recursion-aware cycle check
-            - Recursion-aware delays
+            - Recursion-aware cycle check (DONE)
+            - Recursion-aware delays (DONE)
             - Recursive variable evaluation (DONE)
+            - Test. (DONE)
+                - Recursive validation. (DONE)
+                - Delays. (DONE)
+            - Update README. (DONE)
     - Stereo (DONE)
     - low latency default setup (DONE)
     - audio setup CLI (DONE)
@@ -64,11 +73,6 @@
     - whitenoise function (DONE)
     - sample rewinding/delay (DONE)
     - README (DONE)
-
-### Completed features ###
-
-# Versionless
-    - local storage (DONE, sort of)
 
 # 0.1
     - decoupled oscillators (DONE)

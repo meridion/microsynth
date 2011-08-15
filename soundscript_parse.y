@@ -18,7 +18,7 @@
 
 void yyerror(const char *s);
 static void put_recursion_error() {
-    yyerror("error: All recursive variables must be referenced with a delay")
+    yyerror("error: All recursive variables must be referenced with a delay");
     yyerror("       of at least 1 sample, to break infinite feedback.");
 }
 
@@ -59,8 +59,8 @@ line: EOL
         /* Handle the rest of the assignment */
         expr_add {
 
-            /* Validate recursion */
-            if (ssv_validate_recursion($4)) {
+            /* Validate recursive references */
+            if (ssv_validate_recursion($4, NULL)) {
                 put_recursion_error();
                 YYERROR;
             }
@@ -89,8 +89,8 @@ line: EOL
         /* Handle the rest of the assignment */
         expr_add {
 
-            /* Validate recursion */
-            if (ssv_validate_recursion($4)) {
+            /* Validate recursion, using recursive target */
+            if (ssv_validate_recursion($4, $1)) {
                 put_recursion_error();
                 YYERROR;
             }
@@ -101,7 +101,7 @@ line: EOL
         }
     | expr_add EOL {
             /* Validate recursion */
-            if (ssv_validate_recursion($1)) {
+            if (ssv_validate_recursion($1, NULL)) {
                 put_recursion_error();
                 YYERROR;
             }
@@ -176,8 +176,29 @@ expr_deep: IDENT '(' any_args ')' {
             }
             $$ = ssb_variable($1);
         }
+
+    /* Upgraded delay for recursive variables */
     | expr_deep '[' NUM ']' {
-            $$ = ssb_delay($1, (unsigned int)roundf($3));
+            /* Modify recursive delays */
+            if ($1->type == MSMT_VARIABLE &&
+                    ssv_get_var($1->data.varname)->recursive) {
+
+                /* 0 delay is invalid */
+                if (roundf($3) == 0) {
+                    fprintf(stderr, "Referencing recursive variable '%s'"
+                        " with a delay of 0 samples, invalid.\n",
+                        $1->data.varname);
+                    YYERROR;
+
+                /* Reference minus 1 */
+                } else {
+                    $$ = ssb_delay($1, (unsigned int)roundf($3) - 1);
+                }
+            } else {
+
+                /* Normal delay */
+                $$ = ssb_delay($1, (unsigned int)roundf($3));
+            }
         }
     ;
 
