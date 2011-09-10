@@ -137,7 +137,7 @@ Current quirks:
         x := 0
 
         Since x was recursive when assigning to y, re-assigning x to be
-        non-recursive decreases all delays to x by 1. Simply said,
+        non-recursive decreases all delays to x by 1. Simply put,
         recursive variables are always one sample slower than non-recursive
         variables, in order to keep the evaluation system from falling
         into an infinite loop.
@@ -159,5 +159,5 @@ Current unknown bugs:
     Probably there are a bunch,
     but not now.
 
-Have fun making idiotic sounds. :-)
+Have fun scaring your cat. :-)
 

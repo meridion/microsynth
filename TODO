@@ -24,7 +24,7 @@
     - Autotools build chain.
 
 # 0.1.2
-    - Make GC functions more obvious (naming) (easy)
+    - Make GC functions more obvious (naming) (easy) (DONE)
     - special variables (samplerate, seconds, etc.) (easy)
     - function definitions (requires typing) (big)
     - xargs functions (medium)

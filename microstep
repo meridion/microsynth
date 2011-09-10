@@ -1,16 +1,16 @@
 
-Make sure non-recursively assigning a previously recursive variable
-    to itself, yields the correct error.
-
-Make sure right/left variables are evaluated correctly in new setup.
-
-Use sound graphs in combination with quicksort to find evaluation order. (DONE)
-
-Don't forget to close var mem leak in assignment. (DONE)
-
-Fix segfault: (DONE)
-msynth> x = 4
-msynth> y = x
-msynth> x = y
-then quit to segfault.
+Active bugs:
+synthread: started
+synthread: Detected samplerate of 48000
+synthread: Selected buffersize of 2048
+synthread: Response delay is approximately 42.67 ms
+synthread: Selected period size of 1024
+synthread: Audio system configured.
+microsynth v0.1.2-devel
+msynth> sin(400)
+msynth> sin(200)
+msynth> 0
+msynth> left = sin(200)
+msynth> right = sin(300)
+Segmentation fault
 

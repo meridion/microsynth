@@ -57,8 +57,8 @@ void synth_unlock_graphs()
 void msynth_init()
 {
     /* Setup null signal */
-    ssv_set_var("right", soundscript_mark_use(ssb_number(0.)));
-    ssv_set_var("left", soundscript_mark_use(ssb_number(0.)));
+    ssv_set_var("right", soundscript_gc_mark_use(ssb_gc_number(0.)));
+    ssv_set_var("left", soundscript_gc_mark_use(ssb_gc_number(0.)));
     ssv_regroup();
 
     /* Start synth thread */
@@ -363,7 +363,7 @@ int synth_recover(int err)
 void synth_replace(msynth_modifier tree)
 {
     ssv_set_var("right", tree);
-    ssv_set_var("left", soundscript_mark_use(ssb_variable("right")));
+    ssv_set_var("left", soundscript_gc_mark_use(ssb_gc_variable("right")));
     return;
 }
 

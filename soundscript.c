@@ -81,7 +81,7 @@ void soundscript_parse(char *line)
     yy_delete_buffer(x);
 
     /* Clean up */
-    soundscript_run_gc();
+    soundscript_gc_run();
     free(mod_str);
 
     /* Update variable evaluation order */
@@ -173,7 +173,7 @@ void soundscript_shutdown()
 }
 
 /* Mark mod pointer as used */
-msynth_modifier soundscript_mark_use(msynth_modifier mod)
+msynth_modifier soundscript_gc_mark_use(msynth_modifier mod)
 {
      /*
      * A hashtable entry means the garbage collector
@@ -186,7 +186,7 @@ msynth_modifier soundscript_mark_use(msynth_modifier mod)
 }
 
 /* Mark mod pointer as unused */
-msynth_modifier soundscript_mark_no_use(msynth_modifier mod)
+msynth_modifier soundscript_gc_mark_no_use(msynth_modifier mod)
 {
      /*
      * Insert the mod as key and value to mark it
@@ -198,7 +198,7 @@ msynth_modifier soundscript_mark_no_use(msynth_modifier mod)
 }
 
 /* Destroy all unused pointers and clear GC */
-void soundscript_run_gc(void)
+void soundscript_gc_run(void)
 {
     GList *list, *iter;
     msynth_modifier mod;
@@ -227,7 +227,7 @@ void soundscript_run_gc(void)
 /* The following functions are all garbage collected, use with caution */
 
 /* Constant signal */
-msynth_modifier ssb_number(float num)
+msynth_modifier ssb_gc_number(float num)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -237,13 +237,13 @@ msynth_modifier ssb_number(float num)
     newmod->storage = NULL;
 
     /* Update GC */
-    soundscript_mark_no_use(newmod);
+    soundscript_gc_mark_no_use(newmod);
 
     return newmod;
 }
 
 /* Variable reference */
-msynth_modifier ssb_variable(char *varname)
+msynth_modifier ssb_gc_variable(char *varname)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -254,13 +254,13 @@ msynth_modifier ssb_variable(char *varname)
     newmod->storage = NULL;
 
     /* Update GC */
-    soundscript_mark_no_use(newmod);
+    soundscript_gc_mark_no_use(newmod);
 
     return newmod;
 }
 
 /* Add samples */
-msynth_modifier ssb_add(msynth_modifier a, msynth_modifier b)
+msynth_modifier ssb_gc_add(msynth_modifier a, msynth_modifier b)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -272,15 +272,15 @@ msynth_modifier ssb_add(msynth_modifier a, msynth_modifier b)
     newmod->storage = NULL;
 
     /* Update GC */
-    soundscript_mark_no_use(newmod);
-    soundscript_mark_use(a);
-    soundscript_mark_use(b);
+    soundscript_gc_mark_no_use(newmod);
+    soundscript_gc_mark_use(a);
+    soundscript_gc_mark_use(b);
 
     return newmod;
 }
 
 /* Subtract samples */
-msynth_modifier ssb_sub(msynth_modifier a, msynth_modifier b)
+msynth_modifier ssb_gc_sub(msynth_modifier a, msynth_modifier b)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -292,15 +292,15 @@ msynth_modifier ssb_sub(msynth_modifier a, msynth_modifier b)
     newmod->storage = NULL;
 
     /* Update GC */
-    soundscript_mark_no_use(newmod);
-    soundscript_mark_use(a);
-    soundscript_mark_use(b);
+    soundscript_gc_mark_no_use(newmod);
+    soundscript_gc_mark_use(a);
+    soundscript_gc_mark_use(b);
 
     return newmod;
 }
 
 /* Multiply samples */
-msynth_modifier ssb_mul(msynth_modifier a, msynth_modifier b)
+msynth_modifier ssb_gc_mul(msynth_modifier a, msynth_modifier b)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -312,15 +312,15 @@ msynth_modifier ssb_mul(msynth_modifier a, msynth_modifier b)
     newmod->storage = NULL;
 
     /* Update GC */
-    soundscript_mark_no_use(newmod);
-    soundscript_mark_use(a);
-    soundscript_mark_use(b);
+    soundscript_gc_mark_no_use(newmod);
+    soundscript_gc_mark_use(a);
+    soundscript_gc_mark_use(b);
 
     return newmod;
 }
 
 /* Divide sample by sample */
-msynth_modifier ssb_div(msynth_modifier a, msynth_modifier b)
+msynth_modifier ssb_gc_div(msynth_modifier a, msynth_modifier b)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -332,15 +332,15 @@ msynth_modifier ssb_div(msynth_modifier a, msynth_modifier b)
     newmod->storage = NULL;
 
     /* Update GC */
-    soundscript_mark_no_use(newmod);
-    soundscript_mark_use(a);
-    soundscript_mark_use(b);
+    soundscript_gc_mark_no_use(newmod);
+    soundscript_gc_mark_use(a);
+    soundscript_gc_mark_use(b);
 
     return newmod;
 }
 
 /* Delay sample by X */
-msynth_modifier ssb_delay(msynth_modifier in, int delay)
+msynth_modifier ssb_gc_delay(msynth_modifier in, int delay)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -352,8 +352,8 @@ msynth_modifier ssb_delay(msynth_modifier in, int delay)
     ssb_set_delay(newmod, delay);
 
     /* Update GC */
-    soundscript_mark_no_use(newmod);
-    soundscript_mark_use(in);
+    soundscript_gc_mark_no_use(newmod);
+    soundscript_gc_mark_use(in);
 
     return newmod;
 }
@@ -391,7 +391,7 @@ int ssb_can_func2(char *func_name)
 }
 
 /* Function generating signal (such as whitenoise) */
-msynth_modifier ssb_func0(char *func_name)
+msynth_modifier ssb_gc_func0(char *func_name)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -403,13 +403,13 @@ msynth_modifier ssb_func0(char *func_name)
     newmod->storage = NULL;
 
     /* Update GC state */
-    soundscript_mark_no_use(newmod);
+    soundscript_gc_mark_no_use(newmod);
 
     return newmod;
 }
 
 /* Function call with a single input signal */
-msynth_modifier ssb_func1(char *func_name, msynth_modifier in)
+msynth_modifier ssb_gc_func1(char *func_name, msynth_modifier in)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
     assert(newmod);
@@ -422,14 +422,14 @@ msynth_modifier ssb_func1(char *func_name, msynth_modifier in)
     newmod->storage = NULL;
 
     /* Update GC state */
-    soundscript_mark_use(in);
-    soundscript_mark_no_use(newmod);
+    soundscript_gc_mark_use(in);
+    soundscript_gc_mark_no_use(newmod);
 
     return newmod;
 }
 
 /* Return modifier for function accepting 2 input signals */
-msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
+msynth_modifier ssb_gc_func2(char *func_name, msynth_modifier a,
     msynth_modifier b)
 {
     msynth_modifier newmod = malloc(sizeof(struct _msynth_modifier));
@@ -444,9 +444,9 @@ msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
     newmod->storage = NULL;
 
     /* Update GC state */
-    soundscript_mark_use(a);
-    soundscript_mark_use(b);
-    soundscript_mark_no_use(newmod);
+    soundscript_gc_mark_use(a);
+    soundscript_gc_mark_use(b);
+    soundscript_gc_mark_no_use(newmod);
 
     return newmod;
 }
@@ -583,7 +583,7 @@ soundscript_var ssv_get_var(char *vname)
 void ssv_set_dummy(char *vname)
 {
     if (g_hash_table_lookup(vartab, vname) == NULL)
-        ssv_set_var(vname, soundscript_mark_use(ssb_number(0.f)));
+        ssv_set_var(vname, soundscript_gc_mark_use(ssb_gc_number(0.f)));
 
     return;
 }

@@ -73,7 +73,7 @@ line: EOL
             }
 
             /* Perform assignment */
-            soundscript_mark_use($4);
+            soundscript_gc_mark_use($4);
             ssv_set_var($1, $4);
         }
 
@@ -96,7 +96,7 @@ line: EOL
             }
 
             /* Perform assignment */
-            soundscript_mark_use($4);
+            soundscript_gc_mark_use($4);
             ssv_set_var_recursive($1, $4);
         }
     | expr_add EOL {
@@ -107,7 +107,7 @@ line: EOL
             }
 
             /* GC should not delete this */
-            soundscript_mark_use($1);
+            soundscript_gc_mark_use($1);
 
             /* Change synthesizer signal */
             synth_replace($1);
@@ -124,13 +124,13 @@ line: EOL
     ;
 
 expr_add: expr_mul
-    | expr_mul '+' expr_add { $$ = ssb_add($1, $3); }
-    | expr_mul '-' expr_add { $$ = ssb_sub($1, $3); }
+    | expr_mul '+' expr_add { $$ = ssb_gc_add($1, $3); }
+    | expr_mul '-' expr_add { $$ = ssb_gc_sub($1, $3); }
     ;
 
 expr_mul: expr_deep
-    | expr_deep '*' expr_mul { $$ = ssb_mul($1, $3); }
-    | expr_deep '/' expr_mul { $$ = ssb_div($1, $3); }
+    | expr_deep '*' expr_mul { $$ = ssb_gc_mul($1, $3); }
+    | expr_deep '/' expr_mul { $$ = ssb_gc_div($1, $3); }
     ;
 
 expr_deep: IDENT '(' any_args ')' {
@@ -140,7 +140,7 @@ expr_deep: IDENT '(' any_args ')' {
                         fprintf(stderr, "No such function: '%s'\n", $1);
                         YYERROR;
                     }
-                    $$ = ssb_func0($1);
+                    $$ = ssb_gc_func0($1);
                     break;
 
                 case 1:
@@ -148,7 +148,7 @@ expr_deep: IDENT '(' any_args ')' {
                         fprintf(stderr, "No such function: '%s'\n", $1);
                         YYERROR;
                     }
-                    $$ = ssb_func1($1, $3.argv[0]);
+                    $$ = ssb_gc_func1($1, $3.argv[0]);
                     break;
 
                 case 2:
@@ -156,7 +156,7 @@ expr_deep: IDENT '(' any_args ')' {
                         fprintf(stderr, "No such function: '%s'\n", $1);
                         YYERROR;
                     }
-                    $$ = ssb_func2($1, $3.argv[0], $3.argv[1]);
+                    $$ = ssb_gc_func2($1, $3.argv[0], $3.argv[1]);
                     break;
 
                 default:
@@ -174,7 +174,7 @@ expr_deep: IDENT '(' any_args ')' {
                 fprintf(stderr, "No such variable: '%s'\n", $1);
                 YYERROR;
             }
-            $$ = ssb_variable($1);
+            $$ = ssb_gc_variable($1);
         }
 
     /* Upgraded delay for recursive variables */
@@ -192,12 +192,12 @@ expr_deep: IDENT '(' any_args ')' {
 
                 /* Reference minus 1 */
                 } else {
-                    $$ = ssb_delay($1, (unsigned int)roundf($3) - 1);
+                    $$ = ssb_gc_delay($1, (unsigned int)roundf($3) - 1);
                 }
             } else {
 
                 /* Normal delay */
-                $$ = ssb_delay($1, (unsigned int)roundf($3));
+                $$ = ssb_gc_delay($1, (unsigned int)roundf($3));
             }
         }
     ;
@@ -226,8 +226,8 @@ require_args: expr_add {
         }
     ;
 
-number: '-' NUM { $$ = ssb_number(-$2); }
-    | NUM { $$ = ssb_number($1); }
+number: '-' NUM { $$ = ssb_gc_number(-$2); }
+    | NUM { $$ = ssb_gc_number($1); }
     ;
 
 %%

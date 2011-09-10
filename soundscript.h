@@ -9,27 +9,27 @@ gpointer ssi_def_func(void *func, int args);
 void soundscript_shutdown();
 
 /* Soundscript GC */
-msynth_modifier soundscript_mark_use(msynth_modifier mod);
-msynth_modifier soundscript_mark_no_use(msynth_modifier mod);
-void soundscript_run_gc(void);
+msynth_modifier soundscript_gc_mark_use(msynth_modifier mod);
+msynth_modifier soundscript_gc_mark_no_use(msynth_modifier mod);
+void soundscript_gc_run(void);
 
 /* Soundscript lexer/string GC */
-void soundscript_clear_dups();
+void soundscript_gc_clear_dups();
 
 /* Soundscript build interface */
-msynth_modifier ssb_number(float num);
-msynth_modifier ssb_variable(char *varname);
-msynth_modifier ssb_add(msynth_modifier a, msynth_modifier b);
-msynth_modifier ssb_sub(msynth_modifier a, msynth_modifier b);
-msynth_modifier ssb_mul(msynth_modifier a, msynth_modifier b);
-msynth_modifier ssb_div(msynth_modifier a, msynth_modifier b);
-msynth_modifier ssb_delay(msynth_modifier in, int delay);
+msynth_modifier ssb_gc_number(float num);
+msynth_modifier ssb_gc_variable(char *varname);
+msynth_modifier ssb_gc_add(msynth_modifier a, msynth_modifier b);
+msynth_modifier ssb_gc_sub(msynth_modifier a, msynth_modifier b);
+msynth_modifier ssb_gc_mul(msynth_modifier a, msynth_modifier b);
+msynth_modifier ssb_gc_div(msynth_modifier a, msynth_modifier b);
+msynth_modifier ssb_gc_delay(msynth_modifier in, int delay);
 int ssb_can_func0(char *func_name);
 int ssb_can_func1(char *func_name);
 int ssb_can_func2(char *func_name);
-msynth_modifier ssb_func0(char *func_name);
-msynth_modifier ssb_func1(char *func_name, msynth_modifier in);
-msynth_modifier ssb_func2(char *func_name, msynth_modifier a,
+msynth_modifier ssb_gc_func0(char *func_name);
+msynth_modifier ssb_gc_func1(char *func_name, msynth_modifier in);
+msynth_modifier ssb_gc_func2(char *func_name, msynth_modifier a,
     msynth_modifier b);
 int ssb_is_delay(msynth_modifier mod);
 int ssb_get_delay(msynth_modifier mod);
