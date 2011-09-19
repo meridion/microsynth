@@ -1,6 +1,5 @@
 /* microsynth - Sound scripting */
 #include <stdlib.h>
-#include <stdio.h>
 #include <pthread.h>
 #include <assert.h>
 #include <glib.h>
@@ -693,10 +692,8 @@ int ssv_speculate_cycle(char *vname, msynth_modifier graph)
     var = g_hash_table_lookup(vartab, vname);
     
     /* The variable does not exist yet and can therefore not cause a cycle */
-    if (!var) {
-        printf("spec: var does not exists, no cycle\n");
+    if (!var)
         return 0;
-    }
 
     /* Let's replace the current variable with our speculation variable
      * NOTE: Assign non recursively, as doing otherwise would defeat the purpose
@@ -707,16 +704,11 @@ int ssv_speculate_cycle(char *vname, msynth_modifier graph)
 
     /* Compute cycle */
     usage = ssv_makes_use_of(ssv_get_var(vname), NULL);
-    /* XXX */
-    printf("spec: usage %i\n", usage);
 
     /* Restore old variable */
     free(ssv_get_var(vname));
     g_hash_table_insert(vartab, vname, var);
 
-    /* XXX */
-    if (usage == SSV_USAGE_CIRCULAR)
-        printf("spec: Cycle detected returning 1.\n");
     return usage == SSV_USAGE_CIRCULAR;
 }
 
@@ -961,7 +953,6 @@ void ssv_regroup(void)
 
     /* j will be used to place all recursive variables at the end of the list */
     j = g_hash_table_size(vartab);
-    printf("Vars: %d\n", j);
     eval_list = calloc(j, sizeof(soundscript_var));
 
     iter = list = g_hash_table_get_values(vartab);
@@ -986,7 +977,6 @@ void ssv_regroup(void)
     eval_recursive = j;
 
     /* Now sort array using quicksort based on dependencies */
-    printf("i: %d, j: %d\n", i, j);
     qsort(eval_list, i,
         sizeof(soundscript_var), _compare_graphs);
 
