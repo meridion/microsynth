@@ -961,6 +961,7 @@ void ssv_regroup(void)
 
     /* j will be used to place all recursive variables at the end of the list */
     j = g_hash_table_size(vartab);
+    printf("Vars: %d\n", j);
     eval_list = calloc(j, sizeof(soundscript_var));
 
     iter = list = g_hash_table_get_values(vartab);
@@ -985,7 +986,8 @@ void ssv_regroup(void)
     eval_recursive = j;
 
     /* Now sort array using quicksort based on dependencies */
-    qsort(eval_list, j - 1,
+    printf("i: %d, j: %d\n", i, j);
+    qsort(eval_list, i,
         sizeof(soundscript_var), _compare_graphs);
 
     return;
@@ -1012,8 +1014,10 @@ void ssv_eval(struct sampleclock sc)
     }
 
     /* Store recursive new entries */
-    for (i = eval_recursive; i < size; i++)
+    for (i = eval_recursive; i < size; i++) {
+        v = eval_list[i];
         v->last_eval = v->recursive_next;
+    }
 
     return;
 }
